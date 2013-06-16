@@ -4,6 +4,7 @@
 import Debug.Trace
 import Data.IntMap (IntMap, fromList, elems, size, toList)
 import Data.Monoid
+import Data.MultiSet (findMax, insert, empty)
 import Data.List (maximumBy, elemIndex)
 import Data.Function (on)
 import Control.Lens
@@ -11,7 +12,7 @@ import Control.Monad
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Class
 
-data Attribute = Missing | Numeric Double | Nominal String deriving (Eq, Show)
+data Attribute = Missing | Numeric Double | Nominal String deriving (Eq, Show, Ord)
 data Row = Row {_attributes :: [Attribute], _names :: [String]} deriving (Show)
 data DataSet = DataSet {_rows :: IntMap [Attribute], _names' :: [String]}
 
@@ -24,7 +25,9 @@ rows = lens getter setter
   where
     getter ds = map (\x -> Row {_attributes = x, _names = _names' ds}) . elems . _rows $ ds
     setter _ rs = DataSet {_rows = fromList . zip [1..] . map _attributes $ rs,
-                           _names' = _names . head $ rs}
+                           _names' = maybeNames rs} where
+       maybeNames [] = []
+       maybeNames rs = _names . head $ rs
 
 
 instance Monoid Row where
@@ -135,4 +138,37 @@ ex3 = ds ^.. rows . traversed . attr "x"  -- pokaz wszystkie wartosci atrybutu "
 ex4 = ds & rows . traverse . numeric "x" +~ 1 -- dodaj do wszystkich atrybutow "x" wszysktich obiekotw 1
 ex5 = ds & rows . traverse . numeric "x" %~ (\x -> if x > 1 then 2 * x else 0) -- tak jak wyzej, ale zamiast dodawania arbitralna funkcja (\x -> ...)
 ex6 = ds ^.. rows . traverse . filtered (\x -> x ^. nominal "color" == "red") -- wez tylko te wiersze ktore maja "color" = red
+ex6b = ds & rows .~ fr where
+  fr = ds ^.. rows . traverse . filtered (\x -> x ^. nominal "color" == "red") -- jak wyżej, tylko jako DataSet
 ex7 = ds & rows . traverse . filtered (\x -> x ^. nominal "color" == "red") . numeric "x" +~ 10 -- dodaj 10 do atrybutu "x" wierszy ktore maja "color" = red
+
+
+
+-- CLASSIFIERS
+type Classifier = DataSet -> [Attribute]
+
+majorityFactory :: String -> DataSet -> Classifier
+majorityFactory an ts = \ds -> map (\row -> result) $ ds ^. rows where
+    result = majority $ ts ^.. rows . traversed . attr an
+    majority vals = findMax $ foldl (flip insert) empty vals
+
+
+-- splits DataSet into two disjoint DataSets
+--
+-- TODO : add randomness via some kind of Monad
+split :: DataSet -> (DataSet, DataSet)
+split = undefined
+
+
+
+type Metric = [Attribute] -> [Attribute] -> Double
+
+crossValidate :: DataSet -> Metric -> Classifier -> Double
+crossValidate = undefined
+
+
+stupidMetric :: Metric
+stupidMetric ex re = mean where
+    mean = (foldl (+) 0.0 diffs) / (fromIntegral $ length diffs) 
+    diffs = [ (a - b) | (Numeric a, Numeric b) <- zip ex re]
+
