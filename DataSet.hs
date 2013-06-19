@@ -1,6 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Rank2Types #-}
 
+module DataSet where
+
 import Debug.Trace
 import Data.IntMap (IntMap, fromList, elems, size, toList)
 import Data.Monoid

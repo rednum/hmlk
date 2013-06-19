@@ -1,6 +1,13 @@
-import mapaProsta
+module Classifiers where
 
-type Trained = Monad m => DataSet -> m DataSet -- tak naprawde m - random
+import DataSet
+import Control.Lens
+import Control.Monad
+import Control.Monad.Random
+import Data.MultiSet (insert, empty, findMax)
+
+-- tak naprawde m bedzie po prostu monada random
+type Trained = DataSet -> Rand StdGen DataSet 
 type Classifier = DataSet -> Trained 
 
 -- tutaj jeszcze cos z tymi typami
@@ -17,19 +24,17 @@ simpleVote l = do
 -- fejkowy KNN
 -- wybiera pare egzemplarzy ze zbioru treningowego i zapuszcza na nim 1-kNN
 -- prawdopodobnie bardzo kiepski klasyfikator, ale ma za zadanie zaprezentowac monade random
-fakeKNN :: Trainable
+fakeKNN :: Classifier
 fakeKNN training test = do
-  forM test (\t ->
-    print "Wybierz typow z treningowego"
-    print "klasyfkiuj patrzac na nich"
-  )
-
+  forM (test ^.. rows) (\_ -> undefined)
+  undefined
 
 
 -- CLASSIFIERS
-type Classifier = DataSet -> [Attribute]
+-- chyba zrobimy to inaczje ale zostawima stary kod
+type ClassifierC = DataSet -> [Attribute]
 
-majorityFactory :: String -> DataSet -> Classifier
+majorityFactory :: String -> DataSet -> ClassifierC
 majorityFactory an ts = \ds -> map (\row -> result) $ ds ^. rows where
     result = majority $ ts ^.. rows . traversed . attr an
     majority vals = findMax $ foldl (flip insert) empty vals
