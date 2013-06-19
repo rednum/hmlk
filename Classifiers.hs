@@ -39,8 +39,8 @@ example training test = do
                     _rows = fromList . zip [1..] $ [[Numeric x], [Numeric y]]} 
 
 
--- CLASSIFIERS
 -- chyba zrobimy to inaczje ale zostawima stary kod
+-- CLASSIFIERS
 type ClassifierC = DataSet -> [Attribute]
 
 majorityFactory :: String -> DataSet -> ClassifierC
