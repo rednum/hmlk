@@ -2,12 +2,13 @@
 
 module Classifiers where
 
-import DataSet
 import Control.Lens
 import Control.Monad
-import Control.Monad.Random hiding (fromList)
+import Control.Monad.Random hiding (fromList, split)
+import Data.List (partition)
 import Data.MultiSet (insert, empty, findMax)
 import Data.IntMap (fromList)
+import DataSet
 
 -- tak naprawde m bedzie po prostu monada random
 -- byc moze inny generator, nie wiem w sumie jezcze
@@ -50,10 +51,24 @@ majorityFactory an ts = \ds -> map (\row -> result) $ ds ^. rows where
 
 
 -- splits DataSet into two disjoint DataSets
---
--- TODO : add randomness via some kind of Monad
-split :: DataSet -> (DataSet, DataSet)
-split = undefined
+split :: (RandomGen g) => DataSet -> Rand g (DataSet, DataSet)
+split ds = do
+    rs <- getRandomRs (0::Int, 1::Int)
+    (a, b) <- return $ partition (\x -> fst x == 0) $ zip rs (ds ^. rows)
+    return (remakeSet a, remakeSet b)
+  where
+    remakeSet x = ds & rows .~ (snd $ unzip x)
+
+
+-- splits DataSet into two disjoint, not empty DataSets
+splitNe :: (RandomGen g) => DataSet -> Rand g (DataSet, DataSet)
+splitNe ds = if (length $ ds ^. rows) < 2
+  then error "Set too small"
+  else do
+    (dsa, dsb) <- split ds
+    if any (\x -> null $ x ^. rows) [dsa, dsb]
+      then splitNe ds
+      else return (dsa, dsb)
 
 
 

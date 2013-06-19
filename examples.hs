@@ -1,4 +1,7 @@
-import dataSet
+import Control.Lens
+import Data.IntMap (fromList)
+import DataSet
+import Classifiers
 
 ds :: DataSet
 ds = DataSet {_rows = fromList . zip [1..] $ 
