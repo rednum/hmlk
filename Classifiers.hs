@@ -1,18 +1,22 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Classifiers where
 
 import DataSet
 import Control.Lens
 import Control.Monad
-import Control.Monad.Random
+import Control.Monad.Random hiding (fromList)
 import Data.MultiSet (insert, empty, findMax)
+import Data.IntMap (fromList)
 
 -- tak naprawde m bedzie po prostu monada random
+-- byc moze inny generator, nie wiem w sumie jezcze
 type Trained = DataSet -> Rand StdGen DataSet 
 type Classifier = DataSet -> Trained 
 
 -- tutaj jeszcze cos z tymi typami
 -- jakie jesszcze klasyfikatory?
--- unsuperverised
+-- unsuperverised?
 --
 
 
@@ -20,14 +24,19 @@ simpleVote :: [Classifier] -> Classifier
 simpleVote l = do
   return undefined
 
-
 -- fejkowy KNN
 -- wybiera pare egzemplarzy ze zbioru treningowego i zapuszcza na nim 1-kNN
 -- prawdopodobnie bardzo kiepski klasyfikator, ale ma za zadanie zaprezentowac monade random
 fakeKNN :: Classifier
-fakeKNN training test = do
-  forM (test ^.. rows) (\_ -> undefined)
-  undefined
+fakeKNN training test = undefined
+
+-- zignoruj input i podaj dwie losowe liczby!
+example :: Classifier
+example training test = do
+  x <- getRandomR (0, 10)
+  y <- getRandomR (0, 10)
+  return $ DataSet {_names' = ["decision"], 
+                    _rows = fromList . zip [1..] $ [[Numeric x], [Numeric y]]} 
 
 
 -- CLASSIFIERS
