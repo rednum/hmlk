@@ -13,7 +13,8 @@ import DataSet
 -- tak naprawde m bedzie po prostu monada random
 -- byc moze inny generator, nie wiem w sumie jezcze
 type Trained = DataSet -> Rand StdGen DataSet 
-type Classifier = DataSet -> Trained 
+type Classifier = DataSet -> String -> Trained 
+type Decision = DataSet
 
 -- tutaj jeszcze cos z tymi typami
 -- jakie jesszcze klasyfikatory?
@@ -29,14 +30,14 @@ simpleVote l = do
 -- wybiera pare egzemplarzy ze zbioru treningowego i zapuszcza na nim 1-kNN
 -- prawdopodobnie bardzo kiepski klasyfikator, ale ma za zadanie zaprezentowac monade random
 fakeKNN :: Classifier
-fakeKNN training test = undefined
+fakeKNN training dname test = undefined
 
 -- zignoruj input i podaj dwie losowe liczby!
 example :: Classifier
-example training test = do
+example training dname test = do
   x <- getRandomR (0, 10)
   y <- getRandomR (0, 10)
-  return $ DataSet {_names' = ["decision"], 
+  return $ DataSet {_names' = [dname], 
                     _rows = fromList . zip [1..] $ [[Numeric x], [Numeric y]]} 
 
 
@@ -51,7 +52,7 @@ majorityFactory an ts = \ds -> map (\row -> result) $ ds ^. rows where
 
 
 -- splits DataSet into two disjoint DataSets
-split :: (RandomGen g) => DataSet -> Rand g (DataSet, DataSet)
+split :: DataSet -> Rand StdGen (DataSet, DataSet)
 split ds = do
     rs <- getRandomRs (0::Int, 1::Int)
     (a, b) <- return $ partition (\x -> fst x == 0) $ zip rs (ds ^. rows)
@@ -61,7 +62,7 @@ split ds = do
 
 
 -- splits DataSet into two disjoint, not empty DataSets
-splitNe :: (RandomGen g) => DataSet -> Rand g (DataSet, DataSet)
+splitNe :: DataSet -> Rand StdGen (DataSet, DataSet)
 splitNe ds = if (length $ ds ^. rows) < 2
   then error "Set too small"
   else do
@@ -72,14 +73,23 @@ splitNe ds = if (length $ ds ^. rows) < 2
 
 
 
-type Metric = [Attribute] -> [Attribute] -> Double
+type Metric = Decision -> Decision -> Double
 
-crossValidate :: DataSet -> Metric -> Classifier -> Double
-crossValidate = undefined
+
+crossValidate :: DataSet -> String -> Metric -> Classifier -> Rand StdGen Double
+crossValidate ds dname me cl = do
+    (dsa, dsb) <- splitNe ds
+    tcl <- return $ cl dsa dname
+    dsa' <- return $ dsa `dropCols` (/=dname)
+    dsb' <- return $ dsb `dropCols` (==dname)
+    dec <- tcl dsb'
+    return $ me dsa' dec
 
 
 stupidMetric :: Metric
 stupidMetric ex re = mean where
     mean = (foldl (+) 0.0 diffs) / (fromIntegral $ length diffs) 
-    diffs = [ (a - b) | (Numeric a, Numeric b) <- zip ex re]
-
+    diffs = [ (a - b) | (Numeric a, Numeric b) <- zip ex' re']
+    ex' = fstAttr ex
+    re' = fstAttr re
+    fstAttr ds = map (\x -> head $ x ^. attributes) $ ds ^. rows

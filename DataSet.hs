@@ -50,6 +50,21 @@ attr s = lens getter setter
         Just i -> (Row {_names = n, _attributes = (a & (element i) .~ x)})
         Nothing -> error "Attribute doesn't exist"
 
+
+-- somehow make simulate using lens?
+dropCols :: DataSet -> (String -> Bool) -> DataSet
+ds `dropCols` f = ds & rows .~ newRows where
+    newRows = map dropCols' (ds ^. rows)
+    dropCols' row = row & names .~ n & attributes .~ a where
+      a = filterW c $ row ^. attributes
+    n = filterW c $ _names' ds
+    c = map (\x -> not $ f x) $ _names' ds
+
+
+filterW :: [Bool] -> [a] -> [a]
+filterW p x = snd $ unzip $ filter fst $ zip p x
+
+
 -- lens do wyciagania numerycznych atrybutow - sprawdz examples zeby zobaczyc do czego sluzy
 numeric :: String -> Lens' Row Double
 numeric s = lens getter setter
@@ -121,7 +136,3 @@ dumpData' DataSet {_rows = r, _names' = n} = unlines $ header:(replicate (length
         showAttribute Missing = "?"
 
 dumpData ds = putStrLn $ dumpData' ds
-
-
-
-
