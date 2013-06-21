@@ -23,13 +23,14 @@ data DataSet = DataSet {_rows :: IntMap [Attribute], _names' :: [String]}
 makeLenses ''Row 
 
 rows :: Lens' DataSet [Row]
-rows = lens getter setter 
+rows = lens getter (const buildRows)
   where
     getter ds = map (\x -> Row {_attributes = x, _names = _names' ds}) . elems . _rows $ ds
-    setter _ rs = DataSet {_rows = fromList . zip [1..] . map _attributes $ rs,
-                           _names' = maybeNames rs} where
-       maybeNames [] = []
-       maybeNames rs = _names . head $ rs
+
+buildRows rs = DataSet {_rows = fromList . zip [1..] . map _attributes $ rs,
+                       _names' = maybeNames rs} where
+   maybeNames [] = []
+   maybeNames rs = _names . head $ rs
 
 
 instance Monoid Row where
@@ -51,7 +52,7 @@ attr s = lens getter setter
         Nothing -> error "Attribute doesn't exist"
 
 
--- somehow make simulate using lens?
+-- TODO somehow make simulate using lens?
 dropCols :: DataSet -> (String -> Bool) -> DataSet
 dropCols ds f = ds & rows .~ newRows where
     newRows = map dropCols' (ds ^. rows)
@@ -62,7 +63,7 @@ dropCols ds f = ds & rows .~ newRows where
 
 
 filterW :: [Bool] -> [a] -> [a]
-filterW p x = snd . unzip . filter fst $ zip p x
+filterW ps xs = [x | (x, p) <- zip xs ps, p]
 
 
 -- lens do wyciagania numerycznych atrybutow - sprawdz examples zeby zobaczyc do czego sluzy
@@ -89,8 +90,16 @@ nominal s = lens getter setter
 
 
 addAttr :: String -> (Row -> Attribute) -> Row -> Row
-addAttr name f (r@Row {_attributes=a, _names=n}) = Row {_names = name:n, _attributes=(f r):a}
+addAttr name f r = r & attributes <>~ [(f r)] & names <>~ [name]
 
+rmAttr :: String -> Row -> Row
+rmAttr name r = r & attributes %~ remove & names %~ remove
+  where
+    i = case name `elemIndex` (r ^. names) of
+      Just i -> i
+      Nothing -> error $ "nie ma atrybutu " ++ name ++ ", synu"
+    remove l = [x | (j, x) <- zip [1..] l, j /= i]
+    
 -- TODO
 readCSV :: FilePath -> IO DataSet
 readCSV _ = undefined
@@ -136,3 +145,5 @@ dumpData' DataSet {_rows = r, _names' = n} = unlines $ header:(replicate (length
         showAttribute Missing = "?"
 
 dumpData ds = putStrLn $ dumpData' ds
+
+

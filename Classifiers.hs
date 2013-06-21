@@ -8,6 +8,7 @@ import Control.Monad.Random hiding (fromList, split)
 import Data.List (partition)
 import Data.MultiSet (insert, empty, findMax)
 import Data.IntMap (fromList)
+import Data.Either (partitionEithers)
 import DataSet
 
 -- tak naprawde m bedzie po prostu monada random
@@ -31,7 +32,7 @@ simpleVote l = do
 -- wybiera pare egzemplarzy ze zbioru treningowego i zapuszcza na nim 1-kNN
 -- prawdopodobnie bardzo kiepski klasyfikator, ale ma za zadanie zaprezentowac monade random
 fakeKNN :: Classifier
-fakeKNN training dname test = undefined
+fakeKNN dlabel training test = undefined
 
 -- zignoruj input i podaj dwie losowe liczby!
 example :: Classifier
@@ -51,15 +52,25 @@ majorityFactory an ts = \ds -> map (\row -> result) $ ds ^. rows where
     result = majority $ ts ^.. rows . traversed . attr an
     majority vals = findMax $ foldl (flip insert) empty vals
 
+percentageSplit :: Double -> DataSet -> Rand StdGen ([Row], [Row])
+percentageSplit ratio ds = do 
+    sp <- forM (ds ^. rows) (\d -> do
+        x::Double <- getRandom
+        return $ if x > ratio
+          then Left d
+          else Right d
+        )
+    return $ partitionEithers sp
+ 
 
 -- splits DataSet into two disjoint DataSets
 split :: DataSet -> Rand StdGen (DataSet, DataSet)
 split ds = do
     rs <- getRandomRs (0::Int, 1::Int)
-    (a, b) <- return $ partition (\x -> fst x == 0) $ zip rs (ds ^. rows)
+    let
+      remakeSet x = ds & rows .~ (snd $ unzip x)
+      (a, b) = partition (\x -> fst x == 0) $ zip rs (ds ^. rows)
     return (remakeSet a, remakeSet b)
-  where
-    remakeSet x = ds & rows .~ (snd $ unzip x)
 
 
 -- splits DataSet into two disjoint, not empty DataSets

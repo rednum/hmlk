@@ -7,7 +7,14 @@ ds :: DataSet
 ds = DataSet {_rows = fromList . zip [1..] $ 
               [[Numeric 0, Numeric 0, Nominal "red", Numeric 0], 
                [Numeric 1, Numeric 2, Nominal "red", Numeric 3], 
-               [Numeric 10, Numeric (-10), Nominal "blue", Numeric 4]],
+               [Numeric 10, Numeric (-20), Nominal "blue", Numeric 4],
+               [Numeric 4, Numeric 5, Nominal "red", Numeric 0], 
+               [Numeric 0, Numeric 2, Nominal "red", Numeric 3], 
+               [Numeric 10, Numeric (-10), Nominal "blue", Numeric 4],
+               [Numeric 4, Numeric 2, Nominal "red", Numeric 0], 
+               [Numeric 0, Numeric 2, Nominal "red", Numeric 3], 
+               [Numeric 3, Numeric 2, Nominal "blue", Numeric 4]],
+
               _names' = ["x", "y", "color", "dec"]}
 
 -- EXAMPLES
