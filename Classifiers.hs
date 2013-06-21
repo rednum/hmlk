@@ -13,7 +13,8 @@ import DataSet
 -- tak naprawde m bedzie po prostu monada random
 -- byc moze inny generator, nie wiem w sumie jezcze
 type Trained = DataSet -> Rand StdGen DataSet 
-type Classifier = DataSet -> String -> Trained 
+type Classifier = Label -> DataSet -> Trained 
+type Label = String -- czyli nazwa kolumny z decyzja
 type Decision = DataSet
 
 -- tutaj jeszcze cos z tymi typami
@@ -34,7 +35,7 @@ fakeKNN training dname test = undefined
 
 -- zignoruj input i podaj dwie losowe liczby!
 example :: Classifier
-example training dname test = do
+example dname training test = do
   x <- getRandomR (0, 10)
   y <- getRandomR (0, 10)
   return $ DataSet {_names' = [dname], 
@@ -76,12 +77,13 @@ splitNe ds = if (length $ ds ^. rows) < 2
 type Metric = Decision -> Decision -> Double
 
 
-crossValidate :: DataSet -> String -> Metric -> Classifier -> Rand StdGen Double
+crossValidate :: DataSet -> Label -> Metric -> Classifier -> Rand StdGen Double
 crossValidate ds dname me cl = do
     (dsa, dsb) <- splitNe ds
-    tcl <- return $ cl dsa dname
-    dsa' <- return $ dsa `dropCols` (/=dname)
-    dsb' <- return $ dsb `dropCols` (==dname)
+    let
+      tcl = cl dname dsa
+      dsa' = dsa `dropCols` (/= dname)
+      dsb' = dsb `dropCols` (== dname)
     dec <- tcl dsb'
     return $ me dsa' dec
 

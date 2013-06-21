@@ -53,7 +53,7 @@ attr s = lens getter setter
 
 -- somehow make simulate using lens?
 dropCols :: DataSet -> (String -> Bool) -> DataSet
-ds `dropCols` f = ds & rows .~ newRows where
+dropCols ds f = ds & rows .~ newRows where
     newRows = map dropCols' (ds ^. rows)
     dropCols' row = row & names .~ n & attributes .~ a where
       a = filterW c $ row ^. attributes
@@ -62,7 +62,7 @@ ds `dropCols` f = ds & rows .~ newRows where
 
 
 filterW :: [Bool] -> [a] -> [a]
-filterW p x = snd $ unzip $ filter fst $ zip p x
+filterW p x = snd . unzip . filter fst $ zip p x
 
 
 -- lens do wyciagania numerycznych atrybutow - sprawdz examples zeby zobaczyc do czego sluzy
