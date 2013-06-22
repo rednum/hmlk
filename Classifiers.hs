@@ -3,12 +3,9 @@
 module Classifiers where
 
 import Control.Lens
-import Control.Monad
 import Control.Monad.Random hiding (fromList, split)
-import Data.List (partition)
 import Data.MultiSet (insert, empty, findMax)
 import Data.IntMap (fromList)
-import Data.Either (partitionEithers)
 import DataSet
 
 -- tak naprawde m bedzie po prostu monada random
@@ -16,7 +13,6 @@ import DataSet
 type Trained = DataSet -> Rand StdGen DataSet 
 type Classifier = Label -> DataSet -> Trained 
 type Label = String -- czyli nazwa kolumny z decyzja
-type Decision = DataSet
 
 -- tutaj jeszcze cos z tymi typami
 -- jakie jesszcze klasyfikatory?
@@ -51,67 +47,3 @@ majorityFactory :: String -> DataSet -> ClassifierC
 majorityFactory an ts = \ds -> map (\row -> result) $ ds ^. rows where
     result = majority $ ts ^.. rows . traversed . attr an
     majority vals = findMax $ foldl (flip insert) empty vals
-
-percentageSplit :: Double -> DataSet -> Rand StdGen ([Row], [Row])
-percentageSplit ratio ds = do 
-    sp <- forM (ds ^. rows) (\d -> do
-        x::Double <- getRandom
-        return $ if x > ratio
-          then Left d
-          else Right d
-        )
-    return $ partitionEithers sp
- 
-
--- splits DataSet into two disjoint DataSets
-split :: DataSet -> Rand StdGen (DataSet, DataSet)
-split ds = do
-    rs <- getRandomRs (0::Int, 1::Int)
-    let
-      remakeSet x = ds & rows .~ (snd $ unzip x)
-      (a, b) = partition (\x -> fst x == 0) $ zip rs (ds ^. rows)
-    return (remakeSet a, remakeSet b)
-
-
--- splits DataSet into two disjoint, not empty DataSets
-splitNe :: DataSet -> Rand StdGen (DataSet, DataSet)
-splitNe ds = if (length $ ds ^. rows) < 2
-  then error "Set too small"
-  else do
-    (dsa, dsb) <- split ds
-    if any (\x -> null $ x ^. rows) [dsa, dsb]
-      then splitNe ds
-      else return (dsa, dsb)
-
-
-
-type Metric = Decision -> Decision -> Double
-
-
-crossValidate :: DataSet -> Label -> Metric -> Classifier -> Rand StdGen Double
-crossValidate ds dname me cl = do
-    (dsa, dsb) <- splitNe ds
-    let
-      tcl = cl dname dsa
-      dsa' = dsa `dropCols` (/= dname)
-      dsb' = dsb `dropCols` (== dname)
-    dec <- tcl dsb'
-    return $ me dsa' dec
-
-
-accuracy :: Metric
-accuracy ex re = let
-    good = foldl (+) 0 (map (count) $ _names' ex)
-    all = length $ concat $ ex ^.. rows . traversed . attributes
-    in (fromIntegral good) / (fromIntegral all) where
-      count a = length $ filter (\(x, y) -> x == y) $ zip (col ex a) (col re a)
-      col ds a = ds ^.. rows . traversed . attr a
-
-
-stupidMetric :: Metric
-stupidMetric ex re = mean where
-    mean = (foldl (+) 0.0 diffs) / (fromIntegral $ length diffs) 
-    diffs = [ (a - b) | (Numeric a, Numeric b) <- zip ex' re']
-    ex' = fstAttr ex
-    re' = fstAttr re
-    fstAttr ds = map (\x -> head $ x ^. attributes) $ ds ^. rows

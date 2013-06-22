@@ -2,6 +2,7 @@ import Control.Lens
 import Data.IntMap (fromList)
 import DataSet
 import Classifiers
+import Validation
 
 ds :: DataSet
 ds = DataSet {_rows = fromList . zip [1..] $ 
@@ -16,6 +17,13 @@ ds = DataSet {_rows = fromList . zip [1..] $
                [Numeric 3, Numeric 2, Nominal "blue", Numeric 4]],
 
               _names' = ["x", "y", "color", "dec"]}
+
+dsb = DataSet {_rows = fromList . zip [1..] $ [[Boolean True, Boolean False, Boolean True]],
+               _names' = ["decision"]}
+
+dsc = DataSet {_rows = fromList . zip [1..] $ [[Boolean True, Boolean True, Boolean False]],
+               _names' = ["decision"]}
+
 
 -- EXAMPLES
 sampleRow = Row {_attributes = [Numeric 10, Nominal "blue", Numeric 4], _names = ["x", "color", "decision"]}

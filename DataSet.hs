@@ -14,7 +14,7 @@ import Control.Monad
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Class
 
-data Attribute = Missing | Numeric Double | Nominal String deriving (Eq, Show, Ord)
+data Attribute = Missing | Numeric Double | Nominal String | Boolean Bool deriving (Eq, Show, Ord)
 data Row = Row {_attributes :: [Attribute], _names :: [String]} deriving (Show)
 data DataSet = DataSet {_rows :: IntMap [Attribute], _names' :: [String]}
 
