@@ -99,6 +99,15 @@ crossValidate ds dname me cl = do
     return $ me dsa' dec
 
 
+accuracy :: Metric
+accuracy ex re = let
+    good = foldl (+) 0 (map (count) $ _names' ex)
+    all = length $ concat $ ex ^.. rows . traversed . attributes
+    in (fromIntegral good) / (fromIntegral all) where
+      count a = length $ filter (\(x, y) -> x == y) $ zip (col ex a) (col re a)
+      col ds a = ds ^.. rows . traversed . attr a
+
+
 stupidMetric :: Metric
 stupidMetric ex re = mean where
     mean = (foldl (+) 0.0 diffs) / (fromIntegral $ length diffs) 
