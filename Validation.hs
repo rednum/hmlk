@@ -70,27 +70,31 @@ countSatisfied :: DataSet -> DataSet -> DecisionPredicate -> Int
 countSatisfied dsa dsb f = length $ filter (\(x, y) -> f x y) $ zippedDecisions dsa dsb
 
 
-countHit :: DecisionCounter
-countHit ex re = countSatisfied ex re (==)
-
-
-countMiss :: DecisionCounter
-countMiss ex re = countSatisfied ex re (/=)
-
-
-countPositive :: DecisionCounter
-countPositive ex re = countSatisfied ex re $ curry $ fromBoolean . snd
-
-
-countNegative :: DecisionCounter
-countNegative ex re = countSatisfied ex re $ curry $ not . fromBoolean . snd
-
-
 -- E.g. countBR True Positive == countTruePositive
 countBR :: Bool -> Result -> DecisionCounter
 countBR b r ex re = countSatisfied ex re f where
     f x y = (fromBoolean y) == rb && (x == y) == b
     rb = r == Positive
+
+
+countBR2 :: Bool -> Result -> Bool -> Result -> DecisionCounter
+countBR2 b1 r1 b2 r2 ex re = countBR b1 r1 ex re + countBR b2 r2 ex re
+
+
+countHit :: DecisionCounter
+countHit = countBR2 True Positive True Negative
+
+
+countMiss :: DecisionCounter
+countMiss = countBR2 False Positive False Negative
+
+
+countPositive :: DecisionCounter
+countPositive = countBR2 True Positive False Positive
+
+
+countNegative :: DecisionCounter
+countNegative = countBR2 True Negative False Negative
 
 
 fromBoolean :: Attribute -> Bool
