@@ -99,7 +99,12 @@ countNegative = countBR2 True Negative False Negative
 
 fromBoolean :: Attribute -> Bool
 fromBoolean (Boolean x) = x
-fromBoolean x = error "Not boolean attribute"
+fromBoolean _ = error "Not boolean attribute"
+
+
+fromNumeric :: Attribute -> Double
+fromNumeric (Numeric x) = x
+fromNumeric _ = error "Not numeric attribute"
 
 
 zippedDecisions :: DataSet -> DataSet -> [(Attribute, Attribute)]
@@ -114,7 +119,10 @@ recall ex re = hits / (hits + misses) where
     misses = fromIntegral $ countMiss ex re
 
 
-
+mse :: Metric
+mse ex re = sum / (fromIntegral $ length dec) where
+  sum = foldl (+) 0.0 $ map (\(x, y) -> (fromNumeric x - fromNumeric y)^2) dec
+  dec = zippedDecisions ex re
 
 
 stupidMetric :: Metric
