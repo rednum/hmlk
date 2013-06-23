@@ -17,12 +17,17 @@ import Control.Monad.Reader (asks)
 
 type Classifier d = CM d (Trained d)
 type Trained d = DataSet -> [d]
+type Vote a d = (Decision d) => [a] -> d
+type Distance d = [d] -> [d] -> Double
 
 trainClassifier :: Decision d => Classifier d -> DataSet -> Label -> IO (Trained d)
 trainClassifier c ds l = evalCM c (makeRawDataSet ds l)
 
-lazyKNN :: (Ord d, Show d, Decision d) => Int -> Classifier d
-lazyKNN k = do
+
+-- Generic lazy KNN, using given vote and distance functions.
+lazyKNNG :: (Ord d, Show d, Decision d) =>
+    Vote (Double, d) d -> Distance Double -> Int -> Classifier d
+lazyKNNG v d k = do
   nums <- (asks $ amap numerics >>= return . elems)
   decisions::[d] <- (asks $ amap decision >>= return . elems)
   let 
@@ -30,12 +35,36 @@ lazyKNN k = do
     train' = zip nums decisions
     predict :: DataSet -> [d] -- czyli Trained d
     predict test = map bestFit (numericsOf test)
-    bestFit x = majority . take k . sortBy (dist x) $ train'
-    majority = head . maximumBy (comparing length) . group . sort . map snd
-    dist x (y, _) (z, _) = (dist' y) `compare` (dist' z)
-      where
-        dist' v = sqrt $ foldl (+) 0.0 [(a - b)^2 | (a, b) <- zip v x]
+    bestFit x = v . take k $ sort [ (d x a, b) | (a, b) <- train']
   return predict
+
+
+lazyKNN :: (Ord d, Show d, Decision d) => Int -> Classifier d
+lazyKNN = lazyKNNG (majority . map snd) (pnormDist 2.0)
+
+
+exampleKNN :: (Ord d, Show d, Decision d) => Int -> Classifier d
+exampleKNN = lazyKNNG wagedMajority (pnormDist 5.0)
+
+geometryDist :: Distance Double
+geometryDist = pnormDist 2.0
+
+pnormDist :: Double -> Distance Double
+pnormDist p x y = let
+    s = sum [(a - b)**p | (a, b) <- zip x y]
+  in s**(1.0/p)
+
+
+
+majority :: (Ord d) => Vote d d
+majority = head . maximumBy (comparing length) . group . sort
+
+
+wagedMajority :: (Ord d) => Vote (Double, d) d
+wagedMajority x = let
+    grouped = group $ sortBy (comparing snd) x
+    reduce l = (sum $ map ((\x -> 1 / x) . fst) l, snd $ head l)
+  in snd . maximumBy (comparing fst) $ map reduce grouped
 
 
 simpleVote :: Decision d => [Trained d] -> Trained d
