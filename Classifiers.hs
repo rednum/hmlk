@@ -11,7 +11,7 @@ import Data.IntMap (fromList)
 import Data.Ord
 import DataSet
 import DataSetRaw
-import Data.List (sortBy, groupBy, maximumBy)
+import Data.List (sort, sortBy, group, maximumBy)
 import Data.Array.IArray (amap, elems, listArray)
 import Control.Monad.Reader (asks)
 
@@ -39,9 +39,7 @@ lazyKNN k = do
     predict :: DataSet -> [d] -- czyli Trained d
     predict test = map bestFit (numericsOf test)
     bestFit x = majority . take k . sortBy (dist x) $ train'
-    majority v = let
-        grouped = groupBy ((==) `on` snd) $ sortBy (comparing snd) v
-      in snd . head . maximumBy (comparing length) $ grouped
+    majority = head . maximumBy (comparing length) . group . sort . map snd
     dist x (y, _) (z, _) = (dist' y) `compare` (dist' z)
       where
         dist' v = sqrt $ foldl (+) 0.0 [(a - b)^2 | (a, b) <- zip v x]
