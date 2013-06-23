@@ -11,14 +11,21 @@ import Control.Monad.Reader
 import Control.Monad.Random
 import Data.Array.IArray
 import Data.RVar
+import DataSet
 
-class Decision a
+class Decision a where
+    fromAttribute :: Attribute -> a
 
-instance Decision Double
-instance Decision Bool
-instance Decision String
+instance Decision Double where
+    fromAttribute (Numeric n) = n
 
-data RawRow d = Decision d => Storage {numerics :: [Double], nominals :: [String], decision :: d}
+instance Decision Bool where
+    fromAttribute (Numeric n) = n /= 0
+
+instance Decision String where
+    fromAttribute (Nominal n) = n
+
+data RawRow d = RawRow {numerics :: [Double], nominals :: [String], decision :: d} deriving (Show)
 type Storage d = Array Int (RawRow d)
 type CM d a = Decision d => ReaderT (Storage d) (Rand StdGen) a
 
@@ -30,10 +37,8 @@ evalCM cm store =
 
 ex1 :: CM Double [Double]
 ex1 = do
-  ss <- (asks $ amap (head . numerics) >>= return . elems)
-  return ss
-  --  liftM head $ forM (elems store) (\(x:_) -> (liftM $ (trunc 2) . (+ x)) (getRandomR (-1, 1)))
-
+  store::[Double] <- asks $ (amap (head . numerics)) >>= return . elems
+  forM store (\x -> (liftM $ (trunc 2) . (+ x)) (getRandomR (-1, 1)))
 
 
 

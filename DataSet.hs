@@ -98,7 +98,7 @@ rmAttr :: String -> Row -> Row
 rmAttr name r = r & attributes %~ remove & names %~ remove
   where
     i = case name `elemIndex` (r ^. names) of
-      Just i -> i
+      Just i -> i + 1
       Nothing -> error $ "nie ma atrybutu " ++ name ++ ", synu"
     remove l = [x | (j, x) <- zip [1..] l, j /= i]
     
@@ -149,11 +149,23 @@ dumpData' DataSet {_rows = r, _names' = n} = unlines $ header:(replicate (length
 dumpData ds = putStrLn $ dumpData' ds
 
 numericsOf :: DataSet -> [[Double]]
-numericsOf ds = map (map strip) (ds ^.. rows . traverse . attributes)
+numericsOf ds = map (map strip . filter isNumeric) (ds ^.. rows . traverse . attributes)
   where
     strip (Numeric n) = n
 
 nominalsOf :: DataSet -> [[String]]
-nominalsOf ds = map (map strip) (ds ^.. rows . traverse . attributes)
+nominalsOf ds = map (map strip . filter isNominal) (ds ^.. rows . traverse . attributes)
   where
     strip (Nominal n) = n
+
+isNumeric :: Attribute -> Bool
+isNumeric (Numeric n) = True
+isNumeric _ = False
+
+isNominal :: Attribute -> Bool
+isNominal (Nominal n) = True
+isNominal _ = False
+
+isMissing :: Attribute -> Bool
+isMissing Missing = True
+isMissing _ = False

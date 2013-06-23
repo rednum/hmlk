@@ -7,16 +7,16 @@ import Validation
 ds :: DataSet
 ds = DataSet {_rows = fromList . zip [1..] $ 
               [[Numeric 0, Numeric 0, Nominal "red", Numeric 0], 
-               [Numeric 1, Numeric 2, Nominal "red", Numeric 3], 
-               [Numeric 10, Numeric (-20), Nominal "blue", Numeric 4],
-               [Numeric 4, Numeric 5, Nominal "red", Numeric 0], 
+               [Numeric 1, Numeric 1, Nominal "red", Numeric 3], 
+               [Numeric 1, Numeric (-2), Nominal "blue", Numeric 4],
+               [Numeric 1, Numeric 0, Nominal "red", Numeric 0], 
                [Numeric 0, Numeric 2, Nominal "red", Numeric 3], 
-               [Numeric 10, Numeric (-10), Nominal "blue", Numeric 4],
-               [Numeric 4, Numeric 2, Nominal "red", Numeric 0], 
-               [Numeric 0, Numeric 2, Nominal "red", Numeric 3], 
-               [Numeric 3, Numeric 2, Nominal "blue", Numeric 4]],
+               [Numeric 5, Numeric 5, Nominal "blue", Numeric 4],
+               [Numeric 0, Numeric 5, Nominal "red", Numeric 0], 
+               [Numeric 1, Numeric 5, Nominal "red", Numeric 3], 
+               [Numeric 5, Numeric 6, Nominal "blue", Numeric 4]],
 
-              _names' = ["x", "y", "color", "dec"]}
+              _names' = ["x", "y", "color", "value"]}
 
 dsb = DataSet {_rows = fromList . zip [1..] $ [[Boolean True, Boolean False, Boolean True]],
                _names' = ["decision"]}
