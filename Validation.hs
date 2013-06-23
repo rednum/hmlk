@@ -2,13 +2,14 @@
 
 module Validation where
 
-import Classifiers (Classifier, Label, Trained)
+import Classifiers (Classifier, Trained)
 import Control.Lens
 import Control.Monad
 import Control.Monad.Random hiding (fromList, split)
 import Data.Either (partitionEithers)
 import Data.List (partition)
 import DataSet
+import DataSetRaw (Label)
 
 type Metric = Decision -> Decision -> Double
 type Decision = DataSet
