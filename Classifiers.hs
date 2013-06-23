@@ -39,7 +39,9 @@ lazyKNN k = do
     predict :: DataSet -> [d] -- czyli Trained d
     predict test = map bestFit (numericsOf test)
     bestFit x = majority . take k . sortBy (dist x) $ train'
-    majority v =  snd . head . maximumBy (comparing length) $ groupBy ((==) `on` snd) v
+    majority v = let
+        grouped = groupBy ((==) `on` snd) $ sortBy (comparing snd) v
+      in snd . head . maximumBy (comparing length) $ grouped
     dist x (y, _) (z, _) = (dist' y) `compare` (dist' z)
       where
         dist' v = sqrt $ foldl (+) 0.0 [(a - b)^2 | (a, b) <- zip v x]
