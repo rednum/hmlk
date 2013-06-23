@@ -6,13 +6,16 @@ module Classifiers where
 
 import Control.Lens
 import Control.Monad.Random hiding (fromList, split)
-import Data.MultiSet (insert, empty, findMax)
+import Data.Function (on)
 import Data.IntMap (fromList)
+import Data.Ord
 import DataSet
 import DataSetRaw
-import Data.List (sortBy)
+import Data.List (sortBy, groupBy, maximumBy)
 import Data.Array.IArray (amap, elems, listArray)
 import Control.Monad.Reader (asks)
+
+import Debug.Trace
 
 type Label = String -- czyli nazwa kolumny z decyzja
 type Classifier d = CM d (Trained d)
@@ -28,7 +31,7 @@ makeRawDataSet ds l = listArray (0, length decs - 1) $ zipWith3 makeRow (numeric
     ds' = ds & rows . traverse %~ rmAttr l
     makeRow nu no de = RawRow {numerics = nu, nominals = no, decision = de}
 
-lazyKNN :: (Ord d, Decision d) => Int -> Classifier d
+lazyKNN :: (Ord d, Show d, Decision d) => Int -> Classifier d
 lazyKNN k = do
   nums <- (asks $ amap numerics >>= return . elems)
   decisions::[d] <- (asks $ amap decision >>= return . elems)
@@ -37,8 +40,8 @@ lazyKNN k = do
     train' = zip nums decisions
     predict :: DataSet -> [d] -- czyli Trained d
     predict test = map bestFit (numericsOf test)
-    bestFit x = majority . take k . sortBy (dist x) $ train'
-    majority v = findMax $ foldl (flip insert) empty $ map snd v
+    bestFit x = majority . take k $ sortBy (dist x) $ train'
+    majority v =  snd . head . maximumBy (comparing length) $ groupBy ((==) `on` snd) v
     dist x (y, _) (z, _) = (dist' y) `compare` (dist' z)
       where
         dist' v = sqrt $ foldl (+) 0.0 [(a - b)^2 | (a, b) <- zip v x]
