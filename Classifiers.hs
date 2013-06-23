@@ -15,8 +15,6 @@ import Data.List (sortBy, groupBy, maximumBy)
 import Data.Array.IArray (amap, elems, listArray)
 import Control.Monad.Reader (asks)
 
-import Debug.Trace
-
 type Label = String -- czyli nazwa kolumny z decyzja
 type Classifier d = CM d (Trained d)
 type Trained d = DataSet -> [d]
@@ -40,7 +38,7 @@ lazyKNN k = do
     train' = zip nums decisions
     predict :: DataSet -> [d] -- czyli Trained d
     predict test = map bestFit (numericsOf test)
-    bestFit x = majority . take k $ sortBy (dist x) $ train'
+    bestFit x = majority . take k . sortBy (dist x) $ train'
     majority v =  snd . head . maximumBy (comparing length) $ groupBy ((==) `on` snd) v
     dist x (y, _) (z, _) = (dist' y) `compare` (dist' z)
       where
