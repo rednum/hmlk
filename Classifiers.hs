@@ -28,7 +28,7 @@ makeRawDataSet ds l = listArray (0, length decs - 1) $ zipWith3 makeRow (numeric
     ds' = ds & rows . traverse %~ rmAttr l
     makeRow nu no de = RawRow {numerics = nu, nominals = no, decision = de}
 
-lazyKNN :: (Decision d) => Int -> Classifier d
+lazyKNN :: (Ord d, Decision d) => Int -> Classifier d
 lazyKNN k = do
   nums <- (asks $ amap numerics >>= return . elems)
   decisions::[d] <- (asks $ amap decision >>= return . elems)
@@ -38,8 +38,10 @@ lazyKNN k = do
     predict :: DataSet -> [d] -- czyli Trained d
     predict test = map bestFit (numericsOf test)
     bestFit x = majority . take k . sortBy (dist x) $ train'
-    majority = undefined
-    dist x (y, _) = undefined
+    majority v = findMax $ foldl (flip insert) empty $ map snd v
+    dist x (y, _) (z, _) = (dist' y) `compare` (dist' z)
+      where
+        dist' v = sqrt $ foldl (+) 0.0 [(a - b)^2 | (a, b) <- zip v x]
   return predict
 
 
