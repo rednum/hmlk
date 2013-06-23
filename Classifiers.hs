@@ -1,4 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Classifiers where
 
@@ -7,43 +9,32 @@ import Control.Monad.Random hiding (fromList, split)
 import Data.MultiSet (insert, empty, findMax)
 import Data.IntMap (fromList)
 import DataSet
+import DataSetRaw
+import Data.List (sortBy)
+import Data.Array.IArray (amap, elems)
+import Control.Monad.Reader (asks)
 
--- tak naprawde m bedzie po prostu monada random
--- byc moze inny generator, nie wiem w sumie jezcze
-type Trained = DataSet -> Rand StdGen DataSet 
-type Classifier = Label -> DataSet -> Trained 
 type Label = String -- czyli nazwa kolumny z decyzja
-
--- tutaj jeszcze cos z tymi typami
--- jakie jesszcze klasyfikatory?
--- unsuperverised?
---
+type Classifier d = DataSet -> Label -> CM d (Trained d)
+type Trained d = DataSet -> [d]
 
 
-simpleVote :: [Classifier] -> Classifier
+lazyKNN :: (Decision d) => Int -> Classifier d
+lazyKNN k train label = do
+  nums <- (asks $ amap numerics >>= return . elems)
+  decisions::[d] <- (asks $ amap decision >>= return . elems)
+  let 
+    train' :: [([Double], d)]
+    train' = zip nums decisions
+    predict :: DataSet -> [d] -- czyli Trained d
+    predict test = map bestFit (numericsOf test)
+    bestFit x = majority . take k . sortBy (dist x) $ train'
+    majority = undefined
+    dist x (y, _) = undefined
+  return predict
+
+
+simpleVote :: Decision d => [Classifier d] -> Classifier d
 simpleVote l = do
   return undefined
 
--- fejkowy KNN
--- wybiera pare egzemplarzy ze zbioru treningowego i zapuszcza na nim 1-kNN
--- prawdopodobnie bardzo kiepski klasyfikator, ale ma za zadanie zaprezentowac monade random
-fakeKNN :: Classifier
-fakeKNN dlabel training test = undefined
-
--- zignoruj input i podaj dwie losowe liczby!
-example :: Classifier
-example dname training test = do
-  x <- getRandomR (0, 10)
-  y <- getRandomR (0, 10)
-  return $ DataSet {_names' = [dname], 
-                    _rows = fromList . zip [1..] $ [[Numeric x], [Numeric y]]} 
-
-
--- chyba zrobimy to inaczje ale zostawima stary kod
--- CLASSIFIERS
-type ClassifierC = DataSet -> [Attribute]
-
-majorityFactory :: String -> DataSet -> ClassifierC
-majorityFactory an ts = \ds -> map (\row -> result) $ ds ^. rows where
-    result = majority $ ts ^.. rows . traversed . attr an
-    majority vals = findMax $ foldl (flip insert) empty vals

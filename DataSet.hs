@@ -54,10 +54,12 @@ attr s = lens getter setter
 
 -- TODO somehow make simulate using lens?
 dropCols :: DataSet -> (String -> Bool) -> DataSet
-dropCols ds f = ds & rows .~ newRows where
+dropCols ds f = ds & rows .~ newRows 
+  where
     newRows = map dropCols' (ds ^. rows)
-    dropCols' row = row & names .~ n & attributes .~ a where
-      a = filterW c $ row ^. attributes
+    dropCols' row = row & names .~ n & attributes .~ a 
+      where
+        a = filterW c $ row ^. attributes
     n = filterW c $ _names' ds
     c = map (\x -> not $ f x) $ _names' ds
 
@@ -146,4 +148,12 @@ dumpData' DataSet {_rows = r, _names' = n} = unlines $ header:(replicate (length
 
 dumpData ds = putStrLn $ dumpData' ds
 
+numericsOf :: DataSet -> [[Double]]
+numericsOf ds = map (map strip) (ds ^.. rows . traverse . attributes)
+  where
+    strip (Numeric n) = n
 
+nominalsOf :: DataSet -> [[String]]
+nominalsOf ds = map (map strip) (ds ^.. rows . traverse . attributes)
+  where
+    strip (Nominal n) = n

@@ -48,6 +48,7 @@ splitNe ds = if (length $ ds ^. rows) < 2
       else return (dsa, dsb)
 
 
+{-
 crossValidate :: DataSet -> Label -> Metric -> Classifier -> Rand StdGen Double
 crossValidate ds dname me cl = do
     (dsa, dsb) <- splitNe ds
@@ -132,3 +133,4 @@ stupidMetric ex re = mean where
     ex' = fstAttr ex
     re' = fstAttr re
     fstAttr ds = map (\x -> head $ x ^. attributes) $ ds ^. rows
+-}
