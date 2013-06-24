@@ -123,15 +123,7 @@ recall ex re = hits / (hits + misses) where
 
 mse :: Metric
 mse ex re = sum / (fromIntegral $ length dec) where
-  sum = foldl (+) 0.0 $ map (\(x, y) -> (fromNumeric x - fromNumeric y)^2) dec
+  sum = sum $ map (\(x, y) -> (fromNumeric x - fromNumeric y)^2) dec
   dec = zippedDecisions ex re
 
-
-stupidMetric :: Metric
-stupidMetric ex re = mean where
-    mean = (foldl (+) 0.0 diffs) / (fromIntegral $ length diffs) 
-    diffs = [ (a - b) | (Numeric a, Numeric b) <- zip ex' re']
-    ex' = fstAttr ex
-    re' = fstAttr re
-    fstAttr ds = map (\x -> head $ x ^. attributes) $ ds ^. rows
 -}

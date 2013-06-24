@@ -5,6 +5,7 @@
 module Classifiers where
 
 import Control.Lens
+import Control.Monad
 import Control.Monad.Random hiding (fromList, split)
 import Data.Function (on)
 import Data.IntMap (fromList)
@@ -28,8 +29,8 @@ trainClassifier c ds l = evalCM c (makeRawDataSet ds l)
 lazyKNNG :: (Ord d, Show d, Decision d) =>
     Vote (Double, d) d -> Distance Double -> Int -> Classifier d
 lazyKNNG v d k = do
-  nums <- (asks $ amap numerics >>= return . elems)
-  decisions::[d] <- (asks $ amap decision >>= return . elems)
+  nums <- liftM elems . asks $ amap numerics
+  decisions::[d] <- liftM elems . asks $ amap decision
   let 
     train' :: [([Double], d)]
     train' = zip nums decisions
@@ -44,7 +45,7 @@ lazyKNN = lazyKNNG (majority . map snd) (pnormDist 2.0)
 
 
 exampleKNN :: (Ord d, Show d, Decision d) => Int -> Classifier d
-exampleKNN = lazyKNNG wagedMajority (pnormDist 5.0)
+exampleKNN = lazyKNNG weightedMajority (pnormDist 5.0)
 
 geometryDist :: Distance Double
 geometryDist = pnormDist 2.0
@@ -55,15 +56,14 @@ pnormDist p x y = let
   in s**(1.0/p)
 
 
-
 majority :: (Ord d) => Vote d d
 majority = head . maximumBy (comparing length) . group . sort
 
 
-wagedMajority :: (Ord d) => Vote (Double, d) d
-wagedMajority x = let
+weightedMajority :: (Ord d) => Vote (Double, d) d
+weightedMajority x = let
     grouped = group $ sortBy (comparing snd) x
-    reduce l = (sum $ map ((\x -> 1 / x) . fst) l, snd $ head l)
+    reduce l = (sum $ map ((\(x, _) -> 1 / x)) l, snd $ head l)
   in snd . maximumBy (comparing fst) $ map reduce grouped
 
 
