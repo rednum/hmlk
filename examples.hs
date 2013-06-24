@@ -41,4 +41,23 @@ ex6 = ds ^.. rows . traverse . filtered (\x -> x ^. nominal "color" == "red") --
 ex6b = ds & rows .~ fr where
   fr = ds ^.. rows . traverse . filtered (\x -> x ^. nominal "color" == "red") -- jak wyżej, tylko jako DataSet
 ex7 = ds & rows . traverse . filtered (\x -> x ^. nominal "color" == "red") . numeric "x" +~ 10 -- dodaj 10 do atrybutu "x" wierszy ktore maja "color" = red
--- 
+
+
+tennis = DataSet {_rows = fromList . zip [1..] $
+                  [[Nominal "Sunny", Nominal "Hot", Nominal "High", Nominal "Weak", Boolean False],
+                   [Nominal "Sunny", Nominal "Hot", Nominal "High", Nominal "Strong", Boolean False],
+                   [Nominal "Overcast", Nominal "Hot", Nominal "High", Nominal "Weak", Boolean True],
+                   [Nominal "Rain", Nominal "Mild", Nominal "High", Nominal "Weak", Boolean True],
+                   [Nominal "Rain", Nominal "Cool", Nominal "Normal", Nominal "Weak", Boolean True],
+                   [Nominal "Rain", Nominal "Cool", Nominal "Normal", Nominal "Strong", Boolean False],
+                   [Nominal "Overcast", Nominal "Cool", Nominal "Normal", Nominal "Strong", Boolean True],
+                   [Nominal "Sunny", Nominal "Mild", Nominal "High", Nominal "Weak", Boolean False],
+                   [Nominal "Sunny", Nominal "Cool", Nominal "Normal", Nominal "Weak", Boolean True],
+                   [Nominal "Rain", Nominal "Mild", Nominal "Normal", Nominal "Weak", Boolean True],
+                   [Nominal "Sunny", Nominal "Mild", Nominal "Normal", Nominal "Strong", Boolean True],
+                   [Nominal "Overcast", Nominal "Mild", Nominal "High", Nominal "Strong", Boolean True],
+                   [Nominal "Overcast", Nominal "Hot", Nominal "Normal", Nominal "Weak", Boolean True],
+                   [Nominal "Rain", Nominal "Mild", Nominal "High", Nominal "Strong", Boolean False]],
+
+                  _names' = ["Outlook", "Temperature", "Humidity", "Wind", "PlayTennis"]}
+                    

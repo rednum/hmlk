@@ -13,7 +13,7 @@ import Data.IntMap (fromList)
 import Data.Ord
 import DataSet
 import DataSetRaw
-import Data.List (sort, sortBy, group, maximumBy)
+import Data.List (find, sort, sortBy, group, maximumBy, nub)
 import Data.Array.IArray (amap, elems, listArray)
 import Control.Monad.Reader (asks)
 
@@ -81,3 +81,60 @@ simpleVote :: Decision d => [Trained d] -> Trained d
 simpleVote l = do
   return undefined
 
+
+
+
+-- DECISION TREES
+
+data DecisionTree d = Decision d => Leaf d | Node Label [(Attribute -> Bool, DecisionTree d)]
+
+
+
+--buildTree :: DataSet -> 
+
+
+gainRatio :: Label -> DataSet -> Label -> Double
+gainRatio l ds a = gain l ds a / splitInformation ds a
+
+
+splitInformation :: DataSet -> Label -> Double
+splitInformation ds a = sum [ - p * (logBase 2.0 p)  | v <- attrVals ds a,
+                                    let ds' = withValue ds a v
+                                        p = dlen ds' / dlen ds ]
+
+
+gain :: Label -> DataSet -> Label -> Double
+gain l ds a = let
+    e = entropy l ds
+    f v = -(dlen ds' / dlen ds) * entropy l ds'
+      where
+        ds' = withValue ds a v
+  in sum $ map f $ attrVals ds a
+
+
+dlen :: DataSet -> Double
+dlen ds = fromIntegral . length $ ds ^. rows
+
+attrVals :: DataSet -> Label -> [Attribute]
+attrVals ds a = nub $ ds ^.. rows . traversed . attr a
+
+
+withValue :: DataSet -> Label -> Attribute -> DataSet
+withValue ds a v = ds & rows .~ ds ^.. rows . traverse . filtered (\x -> x ^. attr a == v)
+
+
+entropy :: Label -> DataSet -> Double
+entropy l ds = - sum [ p * (logBase 2.0 p)  | let occ = occurences l ds, (x, _) <- occ,
+                                              let p = occurenceRatio x occ ]
+
+
+occurenceRatio :: Ord a => a -> [(a, Int)] -> Double
+occurenceRatio x occ = let
+    all = sum $ map snd occ :: Int
+    Just (_, xo) = find ((==x) . fst) occ
+  in (fromIntegral xo) / (fromIntegral all)
+
+occurences :: Label -> DataSet -> [(Attribute, Int)]
+occurences l ds = let
+    dec = ds ^.. rows . traversed . attr l
+  in  map (\x -> (head x, length x)) . group $ sort dec

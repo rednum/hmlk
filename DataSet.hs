@@ -144,6 +144,7 @@ dumpData' DataSet {_rows = r, _names' = n} = unlines $ header:(replicate (length
         datas = [unwords . map (padding . showAttribute) $ x | (_, x) <- toList r] 
         showAttribute (Numeric n) = show n
         showAttribute (Nominal n) = n
+        showAttribute (Boolean n) = show n
         showAttribute Missing = "?"
 
 dumpData ds = putStrLn $ dumpData' ds
