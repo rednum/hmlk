@@ -2,6 +2,7 @@ import Control.Lens
 import Data.IntMap (fromList)
 import DataSet
 import Classifiers
+import Clustering
 import Validation
 
 ds :: DataSet
@@ -11,10 +12,11 @@ ds = DataSet {_rows = fromList . zip [1..] $
                [Numeric 1, Numeric (-2), Nominal "blue", Numeric 4],
                [Numeric 1, Numeric 0, Nominal "red", Numeric 0], 
                [Numeric 0, Numeric 2, Nominal "red", Numeric 3], 
-               [Numeric 5, Numeric 5, Nominal "blue", Numeric 4],
-               [Numeric 0, Numeric 5, Nominal "red", Numeric 0], 
-               [Numeric 1, Numeric 5, Nominal "red", Numeric 3], 
-               [Numeric 5, Numeric 6, Nominal "blue", Numeric 4]],
+               [Numeric 16, Numeric 15, Nominal "blue", Numeric 4],
+               [Numeric 15, Numeric 15, Nominal "blue", Numeric 4],
+               [Numeric 0, Numeric 25, Nominal "red", Numeric 0], 
+               [Numeric 1, Numeric 23, Nominal "red", Numeric 3]
+              ],
 
               _names' = ["x", "y", "color", "value"]}
 
