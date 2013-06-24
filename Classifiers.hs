@@ -90,7 +90,8 @@ data DecisionTree d = Decision d => Leaf d | Node Label [(Attribute -> Bool, Dec
 
 
 
---buildTree :: DataSet -> 
+buildTree :: Label -> DataSet -> DecisionTree d
+buildTree = undefined
 
 
 gainRatio :: Label -> DataSet -> Label -> Double
@@ -106,10 +107,10 @@ splitInformation ds a = sum [ - p * (logBase 2.0 p)  | v <- attrVals ds a,
 gain :: Label -> DataSet -> Label -> Double
 gain l ds a = let
     e = entropy l ds
-    f v = -(dlen ds' / dlen ds) * entropy l ds'
+    f v = (dlen ds' / dlen ds) * entropy l ds'
       where
         ds' = withValue ds a v
-  in sum $ map f $ attrVals ds a
+  in e - (sum $ map f $ attrVals ds a)
 
 
 dlen :: DataSet -> Double
@@ -133,6 +134,7 @@ occurenceRatio x occ = let
     all = sum $ map snd occ :: Int
     Just (_, xo) = find ((==x) . fst) occ
   in (fromIntegral xo) / (fromIntegral all)
+
 
 occurences :: Label -> DataSet -> [(Attribute, Int)]
 occurences l ds = let
