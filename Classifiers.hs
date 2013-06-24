@@ -24,7 +24,6 @@ type Distance d = [d] -> [d] -> Double
 trainClassifier :: Decision d => Classifier d -> DataSet -> Label -> IO (Trained d)
 trainClassifier c ds l = evalCM c (makeRawDataSet ds l)
 
-
 -- Generic lazy KNN, using given vote and distance functions.
 lazyKNNG :: (Ord d, Show d, Decision d) =>
     Vote (Double, d) d -> Distance Double -> Int -> Classifier d
@@ -47,8 +46,8 @@ lazyKNN = lazyKNNG (majority . map snd) (pnormDist 2.0)
 exampleKNN :: (Ord d, Show d, Decision d) => Int -> Classifier d
 exampleKNN = lazyKNNG weightedMajority (pnormDist 5.0)
 
-geometryDist :: Distance Double
-geometryDist = pnormDist 2.0
+euclidean :: Distance Double
+euclidean = pnormDist 2.0
 
 pnormDist :: Double -> Distance Double
 pnormDist p x y = let
