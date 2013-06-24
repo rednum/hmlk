@@ -28,11 +28,11 @@ instance Decision String where
 
 data RawRow d = RawRow {numerics :: [Double], nominals :: [String], decision :: d} deriving (Show)
 type Storage d = Array Int (RawRow d)
-type CM d a = Decision d => ReaderT (Storage d) (Rand StdGen) a
+type CM s a = ReaderT s (Rand StdGen) a
 type Label = String -- czyli nazwa kolumny z decyzja
 
 
-evalCM :: Decision d => CM d a -> Storage d -> IO a
+evalCM :: CM s a -> s -> IO a
 evalCM cm store = 
   evalRandIO $ runReaderT cm store
 
@@ -45,7 +45,7 @@ makeRawDataSet ds l = listArray (0, length decs - 1) $ zipWith3 makeRow (numeric
     makeRow nu no de = RawRow {numerics = nu, nominals = no, decision = de}
 
 
-ex1 :: CM Double [Double]
+ex1 :: CM (Storage Double) [Double]
 ex1 = do
   store::[Double] <- asks $ (amap (head . numerics)) >>= return . elems
   forM store (\x -> (liftM $ (trunc 2) . (+ x)) (getRandomR (-1, 1)))

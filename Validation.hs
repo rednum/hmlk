@@ -52,7 +52,7 @@ splitNe ds = if (length $ ds ^. rows) < 2
 
 
 
-crossValidate :: (Decision d) => DataSet -> Label -> Metric d -> Classifier d -> IO Double
+crossValidate :: (Classifier c, Decision d) => DataSet -> Label -> Metric d -> c d -> IO Double
 crossValidate ds dname me cl = do
     (dsa, dsb) <- evalRandIO $ splitNe ds
     let

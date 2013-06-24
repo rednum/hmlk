@@ -1,6 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 
 module Classifiers where
 
@@ -16,18 +17,28 @@ import Data.List (sort, sortBy, group, maximumBy)
 import Data.Array.IArray (amap, elems, listArray)
 import Control.Monad.Reader (asks)
 
-type Classifier d = CM d (Trained d)
 type Trained d = DataSet -> [d]
 type Vote a d = (Decision d) => [a] -> d
 type Distance d = [d] -> [d] -> Double
 
-trainClassifier :: Decision d => Classifier d -> DataSet -> Label -> IO (Trained d)
-trainClassifier c ds l = evalCM c (makeRawDataSet ds l)
+--type Classifier d = CM d (Trained d)
+class Classifier a where
+    trainClassifier :: Decision d => a d -> DataSet -> Label -> IO (Trained d)
+
+
+newtype UnlabeledClassifier d = UnlabeledClassifier { getUnlabeledClassifier :: CM (Storage d) (Trained d) }
+instance Classifier UnlabeledClassifier where
+    trainClassifier (UnlabeledClassifier c) ds l = evalCM c (makeRawDataSet ds l)
+
+newtype LabeledClassifier d = LabeledClassifier { getLabeledClassifier :: CM DataSet (Trained d) }
+instance Classifier LabeledClassifier where
+    trainClassifier (LabeledClassifier c) ds l = evalCM c ds -- TODO : use label
+
 
 -- Generic lazy KNN, using given vote and distance functions.
 lazyKNNG :: (Ord d, Show d, Decision d) =>
-    Vote (Double, d) d -> Distance Double -> Int -> Classifier d
-lazyKNNG v d k = do
+    Vote (Double, d) d -> Distance Double -> Int -> UnlabeledClassifier d
+lazyKNNG v d k = UnlabeledClassifier $ do
   nums <- liftM elems . asks $ amap numerics
   decisions::[d] <- liftM elems . asks $ amap decision
   let 
@@ -39,11 +50,11 @@ lazyKNNG v d k = do
   return predict
 
 
-lazyKNN :: (Ord d, Show d, Decision d) => Int -> Classifier d
+lazyKNN :: (Ord d, Show d, Decision d) => Int -> UnlabeledClassifier d
 lazyKNN = lazyKNNG (majority . map snd) (pnormDist 2.0)
 
 
-exampleKNN :: (Ord d, Show d, Decision d) => Int -> Classifier d
+exampleKNN :: (Ord d, Show d, Decision d) => Int -> UnlabeledClassifier d
 exampleKNN = lazyKNNG weightedMajority (pnormDist 5.0)
 
 euclidean :: Distance Double
