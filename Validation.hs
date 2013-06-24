@@ -1,18 +1,19 @@
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Validation where
 
-import Classifiers (Classifier, Trained)
+import Classifiers (trainClassifier, Classifier, Trained)
 import Control.Lens
 import Control.Monad
 import Control.Monad.Random hiding (fromList, split)
 import Data.Either (partitionEithers)
 import Data.List (partition)
 import DataSet
-import DataSetRaw (Label)
+import DataSetRaw (fromAttribute, Decision, Label)
 
-type Metric = Decision -> Decision -> Double
-type Decision = DataSet
+
+type Metric d = Decision d => [d] -> [d] -> Double
 
 
 -- VERIFICATION
@@ -49,19 +50,18 @@ splitNe ds = if (length $ ds ^. rows) < 2
       else return (dsa, dsb)
 
 
-{-
-crossValidate :: DataSet -> Label -> Metric -> Classifier -> Rand StdGen Double
+
+crossValidate :: (Decision d) => DataSet -> Label -> Metric d -> Classifier d -> IO Double
 crossValidate ds dname me cl = do
-    (dsa, dsb) <- splitNe ds
+    (dsa, dsb) <- evalRandIO $ splitNe ds
     let
-      tcl = cl dname dsa
-      dsa' = dsa `dropCols` (/= dname)
+      dsa' = map fromAttribute $ dsa ^.. rows . traversed . attr dname
       dsb' = dsb `dropCols` (== dname)
-    dec <- tcl dsb'
-    return $ me dsa' dec
+    tcl <- trainClassifier cl dsa dname
+    return $ me dsa' (tcl dsb')
 
 
-
+{-
 -- METRICS
 
 type DecisionPredicate = Attribute -> Attribute -> Bool
