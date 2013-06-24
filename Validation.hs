@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -61,69 +62,51 @@ crossValidate ds dname me cl = do
     return $ me dsa' (tcl dsb')
 
 
-{-
+
 -- METRICS
 
-type DecisionPredicate = Attribute -> Attribute -> Bool
-type DecisionCounter = DataSet -> DataSet -> Int
+type DecisionPredicate d = Decision d =>  d -> d -> Bool
+type DecisionCounter d = Decision d => [d] -> [d] -> Int
 data Result = Positive | Negative deriving (Eq, Show)
 
-countSatisfied :: DataSet -> DataSet -> DecisionPredicate -> Int
-countSatisfied dsa dsb f = length $ filter (\(x, y) -> f x y) $ zippedDecisions dsa dsb
+countSatisfied :: DecisionPredicate d -> DecisionCounter d
+countSatisfied f da db = length . filter (uncurry f) $ zip da db
 
 
--- E.g. countBR True Positive == countTruePositive
-countBR :: Bool -> Result -> DecisionCounter
-countBR b r ex re = countSatisfied ex re f where
-    f x y = (fromBoolean y) == rb && (x == y) == b
-    rb = r == Positive
+-- E.g. confusionMatrix True Positive ~= countTruePositive
+confusionMatrix :: Bool -> Result -> DecisionCounter Bool
+confusionMatrix b r ex re = countSatisfied f ex re where
+    f x y = y == rb && (x == y) == b
+    rb = r == Positive 
 
 
-countBR2 :: Bool -> Result -> Bool -> Result -> DecisionCounter
-countBR2 b1 r1 b2 r2 ex re = countBR b1 r1 ex re + countBR b2 r2 ex re
+confusionMatrixS :: [(Bool, Result)] -> DecisionCounter Bool
+confusionMatrixS s da db =  sum . map (\x -> x da db) $ map (uncurry confusionMatrix) s
 
 
-countHit :: DecisionCounter
-countHit = countBR2 True Positive True Negative
+countTrue :: Eq d => DecisionCounter d
+countTrue = countSatisfied (==)
 
 
-countMiss :: DecisionCounter
-countMiss = countBR2 False Positive False Negative
+countFalse :: Eq d => DecisionCounter d
+countFalse = countSatisfied (/=)
 
 
-countPositive :: DecisionCounter
-countPositive = countBR2 True Positive False Positive
+countPositive :: DecisionCounter Bool
+countPositive = confusionMatrixS [(True, Positive), (False, Positive)]
+  
 
-
-countNegative :: DecisionCounter
-countNegative = countBR2 True Negative False Negative
-
-
-fromBoolean :: Attribute -> Bool
-fromBoolean (Boolean x) = x
-fromBoolean _ = error "Not boolean attribute"
-
-
-fromNumeric :: Attribute -> Double
-fromNumeric (Numeric x) = x
-fromNumeric _ = error "Not numeric attribute"
-
-
-zippedDecisions :: DataSet -> DataSet -> [(Attribute, Attribute)]
-zippedDecisions dsa dsb = zip (attrs dsa) (attrs dsb) where
-    attrs ds = concat $ ds ^.. rows . traversed . attributes
+countNegative :: DecisionCounter Bool
+countNegative = confusionMatrixS [(True, Negative), (False, Negative)]
 
 
 -- Simple hit-rate metric.
-recall :: Metric
+recall :: Eq d => Metric d
 recall ex re = hits / (hits + misses) where
-    hits = fromIntegral $ countHit ex re
-    misses = fromIntegral $ countMiss ex re
+    hits = fromIntegral $ countTrue ex re
+    misses = fromIntegral $ countFalse ex re
 
 
-mse :: Metric
-mse ex re = sum / (fromIntegral $ length dec) where
-  sum = sum $ map (\(x, y) -> (fromNumeric x - fromNumeric y)^2) dec
-  dec = zippedDecisions ex re
-
--}
+mse :: Metric Double
+mse ex re = s / (fromIntegral $ length ex) where
+  s = sum [ (x - y)^2 | (x, y) <- zip ex re]
