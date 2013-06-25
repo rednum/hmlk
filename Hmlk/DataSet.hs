@@ -19,7 +19,6 @@ data Row = Row {_attributes :: [Attribute], _names :: [String]} deriving (Show)
 data DataSet = DataSet {_rows :: IntMap [Attribute], _names' :: [String]}
 
 
-
 makeLenses ''Row 
 
 rows :: Lens' DataSet [Row]

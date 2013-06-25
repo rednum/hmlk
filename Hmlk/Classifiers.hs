@@ -25,7 +25,6 @@ type Trained d = DataSet -> [d]
 type Vote a d = (Decision d) => [a] -> d
 type Distance d = [d] -> [d] -> Double
 
---type Classifier d = CM d (Trained d)
 class Classifier a where
     trainClassifier :: Decision d => a d -> DataSet -> Label -> IO (Trained d)
 
@@ -54,14 +53,13 @@ instance Decision String where
 
 data RawRow d = RawRow {numerics :: [Double], nominals :: [String], decision :: d} deriving (Show)
 type Storage d = Array Int (RawRow d)
-type CM s a = ReaderT s (Rand StdGen) a
 type Label = String -- czyli nazwa kolumny z decyzja
 
+type CM s a = ReaderT s (Rand StdGen) a
 
 evalCM :: CM s a -> s -> IO a
 evalCM cm store = 
   evalRandIO $ runReaderT cm store
-
 
 makeRawDataSet :: Decision d => DataSet -> Label -> Storage d
 makeRawDataSet ds l = listArray (0, length decs - 1) $ zipWith3 makeRow (numericsOf ds') (nominalsOf ds') decs
