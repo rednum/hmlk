@@ -15,7 +15,7 @@ import DataSet
 import DataSetRaw
 import Data.List (find, sort, sortBy, group, maximumBy, nub)
 import Data.Array.IArray (amap, elems, listArray)
-import Control.Monad.Reader (asks)
+import Control.Monad.Reader (ask, asks)
 
 
 type Trained d = DataSet -> [d]
@@ -95,6 +95,14 @@ instance (Show d) => Show (DecisionTree d) where
 
 
 
+decisionTree :: (Ord d, Decision d) => LabeledClassifier d
+decisionTree = LabeledClassifier $ do
+  (ds, l) <- ask
+  let
+    tree = buildTree l ds
+  return $ runTree tree
+    
+
 buildTree :: (Ord d, Decision d) => Label -> DataSet -> DecisionTree d
 buildTree l ds = let
     empty = length ( _names' ds) == 1 -- only class attribute
@@ -107,7 +115,7 @@ buildTree l ds = let
     bestCut = snd $ maximum [ (cutGain l ds best v, v) | v <- attrVals ds best ]
   in if empty
     then Leaf $ majority [ fromAttribute x | x <- (ds ^.. rows . traversed . attr l) ]
-    else case (classified, numericAttr) of -- TODO : Vote for majority
+    else case (classified, numericAttr) of
       (True, _)  -> Leaf . fromAttribute . head $ ds ^.. rows . traversed . attr l
       (_, True)  -> Node best [ numericChild (<bestCut), numericChild (>=bestCut) ]
       (_, False) -> Node best [ nominalChild (==x) | x <- attrVals ds best ]
