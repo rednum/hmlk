@@ -8,6 +8,7 @@ import Hmlk.Classifiers.Bayesian
 import Hmlk.Classifiers.Lazy
 import Hmlk.Classifiers.Linear
 import Hmlk.Classifiers.Clustering
+import Hmlk.Classifiers.Trees
 import Hmlk.DataSet
 import Hmlk.Classifiers
 import Hmlk.Validation
@@ -100,14 +101,20 @@ tennis = DataSet {_rows = fromList . zip [1..] $
 
 
 tennis' = DataSet {_rows = fromList . zip [1..] $
-                  [[Nominal "Sunny", Boolean False],
-                   [Nominal "Sunny", Boolean True]],
+                  [[Nominal "Sunny", Nominal "Hot", Nominal "Normal", Nominal "Strong", Missing],
+                   [Nominal "Rain", Nominal "Cool", Nominal "High", Nominal "Strong", Missing],
+                   [Nominal "Rain", Nominal "Mild", Nominal "High", Nominal "Weak", Missing],
+                   [Nominal "Overcast", Nominal "Mild", Nominal "Normal", Nominal "Weak", Missing]],
 
-                  _names' = ["Outlook", "PlayTennis"]}
+                  _names' = ["Outlook", "Temperature", "Humidity", "Wind", "PlayTennis"]}
                     
 
 trees :: IO ()
-trees = return ()
+trees =  do
+    print tennis
+    (c::Trained Bool) <- trainClassifier (Hmlk.Classifiers.Trees.decisionTree buildTree) tennis "PlayTennis"
+    print tennis'
+    print (c tennis')
 
 -- do bayesa
 cars = DataSet {_rows = fromList . zip [1..] $
