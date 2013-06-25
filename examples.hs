@@ -1,3 +1,4 @@
+import Bayesian
 import Control.Lens
 import Data.IntMap (fromList)
 import DataSet
@@ -43,6 +44,7 @@ ex6b = ds & rows .~ fr where
 ex7 = ds & rows . traverse . filtered (\x -> x ^. nominal "color" == "red") . numeric "x" +~ 10 -- dodaj 10 do atrybutu "x" wierszy ktore maja "color" = red
 
 
+-- przyklad do drzew
 tennis = DataSet {_rows = fromList . zip [1..] $
                   [[Nominal "Sunny", Nominal "Hot", Nominal "High", Nominal "Weak", Boolean False],
                    [Nominal "Sunny", Nominal "Hot", Nominal "High", Nominal "Strong", Boolean False],
@@ -68,3 +70,24 @@ tennis' = DataSet {_rows = fromList . zip [1..] $
 
                   _names' = ["Outlook", "PlayTennis"]}
                     
+
+
+-- do bayesa
+cars = DataSet {_rows = fromList . zip [1..] $
+      [ [Nominal "Red", Nominal "Sports", Nominal "Domestic", Nominal "Yes"]
+      , [Nominal "Red", Nominal "Sports", Nominal "Domestic", Nominal "No"]
+      , [Nominal "Red", Nominal "Sports", Nominal "Domestic", Nominal "Yes"]
+      , [Nominal "Yellow", Nominal "Sports", Nominal "Domestic", Nominal "No"]
+      , [Nominal "Yellow", Nominal "Sports", Nominal "Imported", Nominal "Yes"]
+      , [Nominal "Yellow", Nominal "SUV", Nominal "Imported", Nominal "No"]
+      , [Nominal "Yellow", Nominal "SUV", Nominal "Imported", Nominal "Yes"]
+      , [Nominal "Yellow", Nominal "SUV", Nominal "Domestic", Nominal "No"]
+      , [Nominal "Red", Nominal "SUV", Nominal "Imported", Nominal "No"]
+      , [Nominal "Red", Nominal "Sports", Nominal "Imported", Nominal "Yes"]],
+
+      _names' = ["Color", "Type", "Origin", "Stolen"]}
+cars' = DataSet {_rows = fromList . zip [1..] $
+      [ [Nominal "Red", Nominal "SUV", Nominal "Imported", Nominal "No"]
+      , [Nominal "Red", Nominal "Sports", Nominal "Domestic", Nominal "Yes"]],
+
+      _names' = ["Color", "Type", "Origin", "Stolen"]}

@@ -39,6 +39,12 @@ instance Monoid Row where
   mempty = Row {_attributes = [], _names = []}
 
 
+rmap :: (String -> Attribute -> a) -> Row -> [a]
+rmap f r = zipWith f (r ^. names) (r ^. attributes)
+
+namedNominals :: Row -> [(String, String)]
+namedNominals = map (\(x, Nominal n) -> (x, n)) . filter (isNominal . snd) . DataSet.rmap (,) 
+
 attr :: String -> Lens' Row Attribute
 attr s = lens getter setter
   where

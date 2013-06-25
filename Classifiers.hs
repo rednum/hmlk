@@ -31,9 +31,9 @@ newtype UnlabeledClassifier d = UnlabeledClassifier { getUnlabeledClassifier :: 
 instance Classifier UnlabeledClassifier where
     trainClassifier (UnlabeledClassifier c) ds l = evalCM c (makeRawDataSet ds l)
 
-newtype LabeledClassifier d = LabeledClassifier { getLabeledClassifier :: CM DataSet (Trained d) }
+newtype LabeledClassifier d = LabeledClassifier { getLabeledClassifier :: CM (DataSet, Label) (Trained d) }
 instance Classifier LabeledClassifier where
-    trainClassifier (LabeledClassifier c) ds l = evalCM c ds -- TODO : use label
+    trainClassifier (LabeledClassifier c) ds l = evalCM c (ds, l) -- TODO : use label
 
 
 -- Generic lazy KNN, using given vote and distance functions.
