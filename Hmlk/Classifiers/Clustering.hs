@@ -13,7 +13,6 @@ import Data.Ord (comparing)
 import Data.Function (on)
 
 import Hmlk.Classifiers hiding (numerics, nominals, Storage)
-import Hmlk.DataSet (numericsOf)
 import Hmlk.DataSet
 
 kMeans = genericKMeans 100 1 euclidean
