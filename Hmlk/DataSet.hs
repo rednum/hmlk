@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE Rank2Types #-}
 
-module DataSet where
+module Hmlk.DataSet where
 
 import Debug.Trace
 import Data.IntMap (IntMap, fromList, elems, size, toList)
@@ -9,7 +9,7 @@ import Data.Monoid
 import Data.MultiSet (findMax, insert, empty)
 import Data.List (maximumBy, elemIndex)
 import Data.Function (on)
-import Control.Lens
+import Control.Lens hiding (rmap)
 import Control.Monad
 import Control.Monad.Trans.State
 import Control.Monad.Trans.Class
@@ -43,7 +43,7 @@ rmap :: (String -> Attribute -> a) -> Row -> [a]
 rmap f r = zipWith f (r ^. names) (r ^. attributes)
 
 namedNominals :: Row -> [(String, String)]
-namedNominals = map (\(x, Nominal n) -> (x, n)) . filter (isNominal . snd) . DataSet.rmap (,) 
+namedNominals = map (\(x, Nominal n) -> (x, n)) . filter (isNominal . snd) . rmap (,) 
 
 attr :: String -> Lens' Row Attribute
 attr s = lens getter setter

@@ -2,16 +2,16 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Validation where
+module Hmlk.Validation where
 
-import Classifiers (trainClassifier, Classifier, Trained)
 import Control.Lens
 import Control.Monad
 import Control.Monad.Random hiding (fromList, split)
 import Data.Either (partitionEithers)
 import Data.List (partition)
-import DataSet
-import DataSetRaw (fromAttribute, Decision, Label)
+import Hmlk.Classifiers (trainClassifier, Classifier, Trained, fromAttribute, Decision, Label)
+import Hmlk.DataSet
+
 
 
 type Metric d = Decision d => [d] -> [d] -> Double

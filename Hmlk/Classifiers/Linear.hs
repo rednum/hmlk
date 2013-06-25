@@ -1,16 +1,17 @@
-module Linear where
+module Hmlk.Classifiers.Linear where
 
 import Control.Monad.Reader
+import Control.Lens
+
 import Data.Packed.Matrix hiding (rows)
 import Numeric.LinearAlgebra hiding (rows)
 import Numeric.LinearAlgebra.Algorithms
-import DataSetRaw hiding (numerics)
-import Classifiers
-import Control.Lens
-import DataSet 
+
+import Hmlk.DataSet 
+import Hmlk.Classifiers hiding (numerics)
 
 linear = ridge 0
---type Classifier = Reader Storage 
+
 a::Matrix Double
 a = fromLists [[1,2], [2,1], [3,3]]
 b::Vector Double
@@ -34,7 +35,3 @@ ridge a b gamma = HMatrixClassifier $ do
       x = pinv ((trans a) <> a + (trans g) <> g) <> (trans a) <> b
       predict = map (dot x . fromList) . numericsOf 
     return predict
-
-
--- normalizacja
--- costam costma

@@ -1,16 +1,14 @@
-module Bayesian where
+module Hmlk.Classifiers.Bayesian where
 
-import Debug.Trace
-import DataSetRaw
-import Classifiers
 import Control.Lens hiding (rmap)
-import DataSet 
 import Data.Ord (comparing)
 import Data.List (maximumBy)
-import qualified Data.MultiSet as MS
-import qualified Data.Map as DM
 import Data.Array.IArray
+import qualified Data.MultiSet as MS
 import Control.Monad.Reader
+
+import Hmlk.DataSet 
+import Hmlk.Classifiers
 
 -- note: those will work only for discrete decision (ie. decision is not double)
 -- mapa decyzja -> (nazwa atrybutu, wartosc) -> liczba; wystapienia decyzji; wystapienia atrybutow

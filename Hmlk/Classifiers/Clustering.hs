@@ -1,22 +1,20 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Clustering where
+module Hmlk.Classifiers.Clustering where
 
+import Control.Lens
 import Control.Monad (forM, liftM)
-import Control.Monad.Random
-import Classifiers
-import DataSetRaw hiding (numerics, nominals, Storage)
-import DataSet (numericsOf)
-import Data.Array.IArray (amap, elems, listArray, Array)
 import Control.Monad.Reader (asks)
+import Control.Monad.Random
+import Data.Array.IArray (amap, elems, listArray, Array)
 import Data.List (groupBy, sortBy, minimumBy)
 import Data.Ord (comparing)
 import Data.Function (on)
-import Classifiers (euclidean)
-import Debug.Trace (trace)
-import DataSet
-import Control.Lens
+
+import Hmlk.Classifiers hiding (numerics, nominals, Storage)
+import Hmlk.DataSet (numericsOf)
+import Hmlk.DataSet
 
 kMeans = genericKMeans 100 1 euclidean
 
@@ -42,14 +40,14 @@ genericKMeans maxIter epsilon d k = UnsupervisedClassifier $ do
     initial <- forM [1..k] (\_ -> mapM getRandomR (limits train))
     let 
       loop i means 
-        | i >= maxIter = trace "max iters" means
-        | epsilon >= (sum $ zipWith d (update means) means) = trace (show means ++ "\nconverged: " ++ show (update means)) means
-        | otherwise = trace (show means) $ loop (i + 1) (update means)
+        | i >= maxIter = means
+        | epsilon >= (sum $ zipWith d (update means) means) = means
+        | otherwise = loop (i + 1) (update means)
       update :: [[Double]] -> [[Double]]
       update means = --undefined
           -- wyglada na to, ze czasem jakis klaster znika - czy wobec tego chcemy dodawac zawsze tez i punkty z klastrow?
-          map (recenter . map snd) . (\g -> trace (show $ length g) g) . groups $ [(minimumIndexByKey (d t) means, t) | t <- train]
-      predict means test = trace ("Clusters: " ++ show means) [show $ minimumIndexByKey (d t) means | t <- numericsOf test]
+          map (recenter . map snd) . groups $ [(minimumIndexByKey (d t) means, t) | t <- train]
+      predict means test = [show $ minimumIndexByKey (d t) means | t <- numericsOf test]
     return $ predict (loop 0 initial)
 
 
@@ -64,3 +62,11 @@ limits :: [[Double]] -> [(Double, Double)]
 limits (h:t) = foldl f [(x, x) | x <- h] t
     where
       f = zipWith (\(mx, mn) x -> (max mx x, min mn x))
+
+euclidean :: Distance Double
+euclidean = pnormDist 2.0
+
+pnormDist :: Double -> Distance Double
+pnormDist p x y = let
+    s = sum [(a - b)**p | (a, b) <- zip x y]
+  in s**(1.0/p)
