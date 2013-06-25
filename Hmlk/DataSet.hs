@@ -18,7 +18,6 @@ data Attribute = Missing | Numeric Double | Nominal String | Boolean Bool derivi
 data Row = Row {_attributes :: [Attribute], _names :: [String]} deriving (Show)
 data DataSet = DataSet {_rows :: IntMap [Attribute], _names' :: [String]}
 
-
 makeLenses ''Row 
 
 rows :: Lens' DataSet [Row]
@@ -57,7 +56,6 @@ attr s = lens getter setter
         Nothing -> error "Attribute doesn't exist"
 
 
--- TODO somehow make simulate using lens?
 dropCols :: DataSet -> (String -> Bool) -> DataSet
 dropCols ds f = ds & rows .~ newRows 
   where
@@ -73,7 +71,6 @@ filterW :: [Bool] -> [a] -> [a]
 filterW ps xs = [x | (x, p) <- zip xs ps, p]
 
 
--- lens do wyciagania numerycznych atrybutow - sprawdz examples zeby zobaczyc do czego sluzy
 numeric :: String -> Lens' Row Double
 numeric s = lens getter setter
   where
@@ -84,7 +81,7 @@ numeric s = lens getter setter
        Numeric n -> r & attr s .~ Numeric x
        _ -> r
      
--- analogicznie do numeric, ale na atrybutach nominalnych
+
 nominal :: String -> Lens' Row String
 nominal s = lens getter setter
   where
@@ -104,33 +101,9 @@ rmAttr name r = r & attributes %~ remove & names %~ remove
   where
     i = case name `elemIndex` (r ^. names) of
       Just i -> i + 1
-      Nothing -> error $ "nie ma atrybutu " ++ name ++ ", synu"
+      Nothing -> error $ "Attribute " ++ name ++ " does not exist"
     remove l = [x | (j, x) <- zip [1..] l, j /= i]
     
--- TODO
-readCSV :: FilePath -> IO DataSet
-readCSV _ = undefined
-
--- nominal "color" ds1 
--- zmien zbior postaci
--- color |    x |  decision
--- red   |    1 |  1
--- blue  |    2 |  0
--- red   |    4 |  1
--- red   |   10 |  0
---
--- na:
---
--- colorRed | colorBlue |    x |  decision
---        1 |         0 |    1 |  1
---        0 |         1 |    2 |  0
---        1 |         0 |    4 |  1
---        1 |         0 |   10 |  0
---
--- TODO
-nominalToNumerics :: String -> DataSet -> DataSet
-nominalToNumerics _ _ = undefined
-
 
 instance Show DataSet where
   show d@DataSet {_rows = r, _names' = n} 
