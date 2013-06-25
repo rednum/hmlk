@@ -60,4 +60,11 @@ tennis = DataSet {_rows = fromList . zip [1..] $
                    [Nominal "Rain", Nominal "Mild", Nominal "High", Nominal "Strong", Boolean False]],
 
                   _names' = ["Outlook", "Temperature", "Humidity", "Wind", "PlayTennis"]}
+
+
+tennis' = DataSet {_rows = fromList . zip [1..] $
+                  [[Nominal "Sunny", Boolean False],
+                   [Nominal "Sunny", Boolean True]],
+
+                  _names' = ["Outlook", "PlayTennis"]}
                     

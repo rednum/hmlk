@@ -22,6 +22,7 @@ instance Decision Double where
 
 instance Decision Bool where
     fromAttribute (Numeric n) = n /= 0
+    fromAttribute (Boolean b) = b
 
 instance Decision String where
     fromAttribute (Nominal n) = n

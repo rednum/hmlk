@@ -17,6 +17,7 @@ import Data.List (find, sort, sortBy, group, maximumBy, nub)
 import Data.Array.IArray (amap, elems, listArray)
 import Control.Monad.Reader (asks)
 
+
 type Trained d = DataSet -> [d]
 type Vote a d = (Decision d) => [a] -> d
 type Distance d = [d] -> [d] -> Double
@@ -88,10 +89,36 @@ simpleVote l = do
 
 data DecisionTree d = Decision d => Leaf d | Node Label [(Attribute -> Bool, DecisionTree d)]
 
+instance (Show d) => Show (DecisionTree d) where
+  show (Leaf x) = "Leaf " ++ (show x)
+  show (Node l s) = "Node " ++ l ++ " " ++ (show $ map snd s)
 
 
-buildTree :: Label -> DataSet -> DecisionTree d
-buildTree = undefined
+
+buildTree :: (Ord d, Decision d) => Label -> DataSet -> DecisionTree d
+buildTree l ds = let
+    empty = length ( _names' ds) == 1 -- only class attribute
+    best = snd $ maximum [ (gainRatio l ds a, a) | a <- _names' ds, a /= l]
+    classified = (==1) . length $ attrVals ds l -- TODO : missings?
+    numericAttr = any isNumeric $ ds ^.. rows . traversed . attr best
+    piece p = fullfilling ds best $ p
+    nominalChild f = (f, buildTree l $ dropCols (piece f) (==best))
+    numericChild f = (f, buildTree l $ piece f)
+    bestCut = snd $ maximum [ (cutGain l ds best v, v) | v <- attrVals ds best ]
+  in if empty
+    then Leaf $ majority [ fromAttribute x | x <- (ds ^.. rows . traversed . attr l) ]
+    else case (classified, numericAttr) of -- TODO : Vote for majority
+      (True, _)  -> Leaf . fromAttribute . head $ ds ^.. rows . traversed . attr l
+      (_, True)  -> Node best [ numericChild (<bestCut), numericChild (>=bestCut) ]
+      (_, False) -> Node best [ nominalChild (==x) | x <- attrVals ds best ]
+
+
+runTree :: (Ord d, Decision d) => DecisionTree d -> DataSet -> [d]
+runTree t ds = map (predictRow t) $ ds ^. rows where
+   predictRow (Leaf v) _ = v
+   predictRow (Node l ch) r = majority [ predictRow t' r | (p, t') <- ch,
+                                                           let v = r ^. attr l,
+                                                           p v || v == Missing ]
 
 
 gainRatio :: Label -> DataSet -> Label -> Double
@@ -100,8 +127,16 @@ gainRatio l ds a = gain l ds a / splitInformation ds a
 
 splitInformation :: DataSet -> Label -> Double
 splitInformation ds a = sum [ - p * (logBase 2.0 p)  | v <- attrVals ds a,
-                                    let ds' = withValue ds a v
+                                    let ds' = fullfilling ds a (==v)
                                         p = dlen ds' / dlen ds ]
+
+
+cutGain :: Label -> DataSet -> Label -> Attribute -> Double
+cutGain l ds a v = let
+    subsetE s = (dlen s / dlen ds) * entropy l s
+    dsa = fullfilling ds a (<v)
+    dsb = fullfilling ds a (>=v)
+  in entropy l ds - subsetE dsa - subsetE dsb
 
 
 gain :: Label -> DataSet -> Label -> Double
@@ -109,7 +144,7 @@ gain l ds a = let
     e = entropy l ds
     f v = (dlen ds' / dlen ds) * entropy l ds'
       where
-        ds' = withValue ds a v
+        ds' = fullfilling ds a (==v)
   in e - (sum $ map f $ attrVals ds a)
 
 
@@ -120,8 +155,8 @@ attrVals :: DataSet -> Label -> [Attribute]
 attrVals ds a = nub $ ds ^.. rows . traversed . attr a
 
 
-withValue :: DataSet -> Label -> Attribute -> DataSet
-withValue ds a v = ds & rows .~ ds ^.. rows . traverse . filtered (\x -> x ^. attr a == v)
+fullfilling :: DataSet -> Label -> (Attribute -> Bool) -> DataSet
+fullfilling ds a p = ds & rows .~ ds ^.. rows . traverse . filtered (\x -> p $ x ^. attr a)
 
 
 entropy :: Label -> DataSet -> Double
