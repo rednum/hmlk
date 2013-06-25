@@ -104,7 +104,7 @@ rmAttr name r = r & attributes %~ remove & names %~ remove
   where
     i = case name `elemIndex` (r ^. names) of
       Just i -> i + 1
-      Nothing -> error $ "nie ma atrybutu " ++ name ++ ", synu"
+      Nothing -> error $ "Attribute doesn't exist"
     remove l = [x | (j, x) <- zip [1..] l, j /= i]
     
 -- TODO
