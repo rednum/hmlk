@@ -13,6 +13,7 @@ import Data.Ord (comparing)
 
 import Hmlk.Classifiers
 import Hmlk.DataSet
+import Hmlk.Validation
 
 
 data DecisionTree d = Decision d => Leaf d | Node Label [(Attribute -> Bool, DecisionTree d)]
@@ -22,30 +23,27 @@ instance (Show d) => Show (DecisionTree d) where
   show (Node l s) = "Node " ++ l ++ " " ++ (show $ map snd s)
 
 
-
 decisionTreeG :: (Ord d, Decision d) =>
-  Vote d d -> AttributeGain -> CutGain -> LabeledClassifier d
-decisionTreeG vf agf cgf = LabeledClassifier $ do
+  Vote d d -> AttributeGain -> CutGain -> TreeBuilder d -> LabeledClassifier d
+decisionTreeG vf agf cgf builder = LabeledClassifier $ do
   (ds, l) <- ask
   let
-    tree = buildTree vf agf cgf l ds
+    tree = builder vf agf cgf l ds
   return $ runTree tree
-    
 
-decisionTree :: (Ord d, Decision d) => LabeledClassifier d
+
+decisionTree :: (Ord d, Decision d) => TreeBuilder d -> LabeledClassifier d
 decisionTree = decisionTreeG majority gainRatio cutGain
 
-
 exampleTree :: (Ord d, Decision d) => LabeledClassifier d
-exampleTree = decisionTreeG majority gain cutGain
+exampleTree = decisionTreeG majority gain cutGain buildTree
 
 
-buildTree :: (Ord d, Decision d) =>
-  Vote d d -> AttributeGain -> CutGain -> Label -> DataSet -> DecisionTree d
+buildTree :: (Ord d, Decision d) => TreeBuilder d
 buildTree vf agf cgf l ds = let
     empty = length ( _names' ds) == 1 -- only class attribute
     best = snd $ maximum [ (agf l ds a, a) | a <- _names' ds, a /= l]
-    classified = (==1) . length $ attrVals ds l -- TODO : missings?
+    classified = (==1) . length $ attrVals ds l
     numericAttr = any isNumeric $ ds ^.. rows . traversed . attr best
     piece p = fullfilling ds best $ p
     nominalChild f = (f, buildTree vf agf cgf l $ dropCols (piece f) (==best))
@@ -59,6 +57,10 @@ buildTree vf agf cgf l ds = let
       (_, False) -> Node best [ nominalChild (==x) | x <- attrVals ds best ]
 
 
+buildCutTree :: (Ord d, Decision d) => Vote d d -> DataSet -> TreeBuilder d
+buildCutTree cv cds vf agf cgf l ds = cutTree cv (buildTree vf agf cgf l ds) l cds
+
+
 runTree :: (Ord d, Decision d) => DecisionTree d -> DataSet -> [d]
 runTree t ds = map (predictRow t) $ ds ^. rows where
    predictRow (Leaf v) _ = v
@@ -67,8 +69,29 @@ runTree t ds = map (predictRow t) $ ds ^. rows where
                                                            p v || v == Missing ]
 
 
+cutTree :: (Ord d, Decision d) =>
+  Vote d d -> DecisionTree d -> Label -> DataSet -> DecisionTree d
+cutTree vf (Leaf v) _ _ = Leaf v
+cutTree vf (Node l ch) d ds = let
+    ch' = [ (p, cutTree vf t d $ fullfilling ds l p) | (p, t) <- ch ]
+    isLeaf (Leaf _) = True
+    isLeaf _ = False
+  in if all (isLeaf . snd) ch'
+    then let
+        ex = [ fromAttribute x | x <- (ds ^.. rows . traversed . attr d) ]
+        t1 = Leaf $ vf [ d | (_, Leaf d) <- ch' ]
+        t2 = Node l ch'
+        re1 = recall ex $ runTree t1 ds
+        re2 = recall ex $ runTree t2 ds
+      in if re1 > re2
+        then t1
+        else t2
+    else Node l ch'
+
+
 type CutGain = Label -> DataSet -> Label -> Attribute -> Double
 type AttributeGain = Label -> DataSet -> Label -> Double
+type TreeBuilder d = Vote d d -> AttributeGain -> CutGain -> Label -> DataSet -> DecisionTree d
 
 
 gainRatio :: AttributeGain
@@ -130,4 +153,3 @@ occurences l ds = let
 
 majority :: (Ord d) => Vote d d
 majority = head . maximumBy (comparing length) . group . sort
-
