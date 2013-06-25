@@ -1,4 +1,4 @@
-module Hmlk.Classifiers.Bayesian where
+module Hmlk.Classifiers.Bayesian (naiveBayes) where
 
 import Control.Lens hiding (rmap)
 import Data.Ord (comparing)
@@ -11,9 +11,8 @@ import Hmlk.DataSet
 import Hmlk.Classifiers
 
 -- note: those will work only for discrete decision (ie. decision is not double)
--- mapa decyzja -> (nazwa atrybutu, wartosc) -> liczba; wystapienia decyzji; wystapienia atrybutow
 type RawPriors d = (MS.MultiSet (d, (String, String)), MS.MultiSet d, MS.MultiSet (String, String))
--- naive bayes
+
 naiveBayes :: (Show d, Ord d, Decision d) => LabeledClassifier d
 naiveBayes = LabeledClassifier $ do
     label <- asks snd

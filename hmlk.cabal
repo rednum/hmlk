@@ -15,6 +15,6 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 library
-  exposed-modules:     Hmlk.Classifiers, Hmlk.DataSet, Hmlk.Validation, Hmlk.Classifiers.Bayesian, Hmlk.Classifiers.Clustering, Hmlk.Classifiers.Lazy, Hmlk.Classifiers.Linear, Hmlk.Classifiers.Meta, Hmlk.Classifiers.Trees
+  exposed-modules:     Hmlk.Classifiers, Hmlk.DataSet, Hmlk.Validation, Hmlk.Classifiers.Bayesian, Hmlk.Classifiers.Clustering, Hmlk.Classifiers.Lazy, Hmlk.Classifiers.Linear, Hmlk.Classifiers.Trees
   -- other-modules:       
   build-depends:       base >=4.5.0.0, lens >= 3.8 , MonadRandom ==0.1.*, containers >= 0.4, array ==0.4.*, mtl ==2.1.*, multiset ==0.2.*, transformers ==0.3.*, hmatrix ==0.14.*
