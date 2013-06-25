@@ -27,8 +27,10 @@ percentageSplit ratio ds = do
         )
     let 
       (l, r) = partitionEithers sp
-      
-    return $ (buildRows l, buildRows r)
+    
+    if length l == 0 || length r == 0
+      then percentageSplit ratio ds
+      else return $ (buildRows l, buildRows r)
  
 
 crossValidate1 :: (Classifier c, Decision d) => Label -> Metric d -> DataSet -> Double -> c d -> IO Double
