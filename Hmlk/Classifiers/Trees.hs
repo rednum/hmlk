@@ -64,9 +64,10 @@ buildCutTree cv cds vf agf cgf l ds = cutTree cv (buildTree vf agf cgf l ds) l c
 runTree :: (Ord d, Decision d) => DecisionTree d -> DataSet -> [d]
 runTree t ds = map (predictRow t) $ ds ^. rows where
    predictRow (Leaf v) _ = v
-   predictRow (Node l ch) r = majority [ predictRow t' r | (p, t') <- ch,
-                                                           let v = r ^. attr l,
-                                                           p v || v == Missing ]
+   predictRow (Node l ch) r = let
+       missing = not $ any id [ p v | (p, t') <- ch, let v = r ^. attr l ]
+     in majority [ predictRow t' r | (p, t') <- ch, let v = r ^. attr l,
+                                     p v || v == Missing || missing ]
 
 
 cutTree :: (Ord d, Decision d) =>
