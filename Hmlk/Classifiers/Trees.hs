@@ -22,26 +22,36 @@ instance (Show d) => Show (DecisionTree d) where
 
 
 
-decisionTree :: (Ord d, Decision d) => LabeledClassifier d
-decisionTree = LabeledClassifier $ do
+decisionTreeG :: (Ord d, Decision d) =>
+  Vote d d -> AttributeGain -> CutGain -> LabeledClassifier d
+decisionTreeG vf agf cgf = LabeledClassifier $ do
   (ds, l) <- ask
   let
-    tree = buildTree l ds
+    tree = buildTree vf agf cgf l ds
   return $ runTree tree
     
 
-buildTree :: (Ord d, Decision d) => Label -> DataSet -> DecisionTree d
-buildTree l ds = let
+decisionTree :: (Ord d, Decision d) => LabeledClassifier d
+decisionTree = decisionTreeG majority gainRatio cutGain
+
+
+exampleTree :: (Ord d, Decision d) => LabeledClassifier d
+exampleTree = decisionTreeG majority gain cutGain
+
+
+buildTree :: (Ord d, Decision d) =>
+  Vote d d -> AttributeGain -> CutGain -> Label -> DataSet -> DecisionTree d
+buildTree vf agf cgf l ds = let
     empty = length ( _names' ds) == 1 -- only class attribute
-    best = snd $ maximum [ (gainRatio l ds a, a) | a <- _names' ds, a /= l]
+    best = snd $ maximum [ (agf l ds a, a) | a <- _names' ds, a /= l]
     classified = (==1) . length $ attrVals ds l -- TODO : missings?
     numericAttr = any isNumeric $ ds ^.. rows . traversed . attr best
     piece p = fullfilling ds best $ p
-    nominalChild f = (f, buildTree l $ dropCols (piece f) (==best))
-    numericChild f = (f, buildTree l $ piece f)
-    bestCut = snd $ maximum [ (cutGain l ds best v, v) | v <- attrVals ds best ]
+    nominalChild f = (f, buildTree vf agf cgf l $ dropCols (piece f) (==best))
+    numericChild f = (f, buildTree vf agf cgf l $ piece f)
+    bestCut = snd $ maximum [ (cgf l ds best v, v) | v <- attrVals ds best ]
   in if empty
-    then Leaf $ majority [ fromAttribute x | x <- (ds ^.. rows . traversed . attr l) ]
+    then Leaf $ vf [ fromAttribute x | x <- (ds ^.. rows . traversed . attr l) ]
     else case (classified, numericAttr) of
       (True, _)  -> Leaf . fromAttribute . head $ ds ^.. rows . traversed . attr l
       (_, True)  -> Node best [ numericChild (<bestCut), numericChild (>=bestCut) ]
@@ -56,7 +66,11 @@ runTree t ds = map (predictRow t) $ ds ^. rows where
                                                            p v || v == Missing ]
 
 
-gainRatio :: Label -> DataSet -> Label -> Double
+type CutGain = Label -> DataSet -> Label -> Attribute -> Double
+type AttributeGain = Label -> DataSet -> Label -> Double
+
+
+gainRatio :: AttributeGain
 gainRatio l ds a = gain l ds a / splitInformation ds a
 
 
@@ -66,7 +80,7 @@ splitInformation ds a = sum [ - p * (logBase 2.0 p)  | v <- attrVals ds a,
                                         p = dlen ds' / dlen ds ]
 
 
-cutGain :: Label -> DataSet -> Label -> Attribute -> Double
+cutGain :: CutGain
 cutGain l ds a v = let
     subsetE s = (dlen s / dlen ds) * entropy l s
     dsa = fullfilling ds a (<v)
@@ -74,7 +88,7 @@ cutGain l ds a v = let
   in entropy l ds - subsetE dsa - subsetE dsb
 
 
-gain :: Label -> DataSet -> Label -> Double
+gain :: AttributeGain
 gain l ds a = let
     e = entropy l ds
     f v = (dlen ds' / dlen ds) * entropy l ds'
