@@ -13,13 +13,11 @@ import Hmlk.Classifiers (trainClassifier, Classifier, Trained, fromAttribute, De
 import Hmlk.DataSet
 
 
-
 type Metric d = Decision d => [d] -> [d] -> Double
 
 
--- VERIFICATION
 
-percentageSplit :: Double -> DataSet -> Rand StdGen ([Row], [Row])
+percentageSplit :: Double -> DataSet -> Rand StdGen (DataSet, DataSet)
 percentageSplit ratio ds = do 
     sp <- forM (ds ^. rows) (\d -> do
         x::Double <- getRandom
@@ -27,41 +25,24 @@ percentageSplit ratio ds = do
           then Left d
           else Right d
         )
-    return $ partitionEithers sp
+    let 
+      (l, r) = partitionEithers sp
+      
+    return $ (buildRows l, buildRows r)
  
 
--- splits DataSet into two disjoint DataSets
-split :: DataSet -> Rand StdGen (DataSet, DataSet)
-split ds = do
-    rs <- getRandomRs (0::Int, 1::Int)
-    let
-      remakeSet x = ds & rows .~ (snd $ unzip x)
-      (a, b) = partition (\x -> fst x == 0) $ zip rs (ds ^. rows)
-    return (remakeSet a, remakeSet b)
-
-
--- splits DataSet into two disjoint, not empty DataSets
-splitNe :: DataSet -> Rand StdGen (DataSet, DataSet)
-splitNe ds = if (length $ ds ^. rows) < 2
-  then error "Set too small"
-  else do
-    (dsa, dsb) <- split ds
-    if any (\x -> null $ x ^. rows) [dsa, dsb]
-      then splitNe ds
-      else return (dsa, dsb)
-
-
-
-crossValidate :: (Classifier c, Decision d) => DataSet -> Label -> Metric d -> c d -> IO Double
-crossValidate ds dname me cl = do
-    (dsa, dsb) <- evalRandIO $ splitNe ds
+crossValidate1 :: (Classifier c, Decision d) => Label -> Metric d -> DataSet -> Double -> c d -> IO Double
+crossValidate1 dname me ds percents cl = do
+    (dsa, dsb) <- evalRandIO $ percentageSplit percents ds
     let
       dsa' = map fromAttribute $ dsa ^.. rows . traversed . attr dname
       dsb' = dsb `dropCols` (== dname)
     tcl <- trainClassifier cl dsa dname
     return $ me dsa' (tcl dsb')
 
-
+crossValidate :: (Classifier c, Decision d) => Label -> Metric d -> DataSet -> Double -> Int -> c d -> IO [Double]
+crossValidate dname me ds percents folds cl = do
+    forM [1..folds] (\_ -> crossValidate1 dname me ds percents cl)
 
 -- METRICS
 
