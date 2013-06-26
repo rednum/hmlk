@@ -17,12 +17,6 @@ ds = DataSet {_rows = fromList . zip [1..] $
 
               _names' = ["x", "y", "color", "value"]}
 
-dsb = DataSet {_rows = fromList . zip [1..] $ [[Boolean True, Boolean False, Boolean True]],
-               _names' = ["decision"]}
-
-dsc = DataSet {_rows = fromList . zip [1..] $ [[Boolean True, Boolean True, Boolean False]],
-               _names' = ["decision"]}
-
 
 sampleRow = Row {_attributes = [Numeric 10, Nominal "blue", Numeric 4], _names = ["x", "color", "decision"]}
 ex00 = sampleRow ^. attr "x" -- pokaz wartosc X
@@ -37,5 +31,3 @@ ex6 = ds ^.. rows . traverse . filtered (\x -> x ^. nominal "color" == "red") --
 ex6b = ds & rows .~ fr where
   fr = ds ^.. rows . traverse . filtered (\x -> x ^. nominal "color" == "red") -- jak wyżej, tylko jako DataSet
 ex7 = ds & rows . traverse . filtered (\x -> x ^. nominal "color" == "red") . numeric "x" +~ 10 -- dodaj 10 do atrybutu "x" wierszy ktore maja "color" = red
-
-

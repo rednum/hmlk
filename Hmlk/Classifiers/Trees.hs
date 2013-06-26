@@ -35,9 +35,6 @@ decisionTreeG vf agf cgf builder = LabeledClassifier $ do
 decisionTree :: (Ord d, Decision d) => TreeBuilder d -> LabeledClassifier d
 decisionTree = decisionTreeG majority gainRatio cutGain
 
-exampleTree :: (Ord d, Decision d) => LabeledClassifier d
-exampleTree = decisionTreeG majority gain cutGain buildTree
-
 
 buildTree :: (Ord d, Decision d) => TreeBuilder d
 buildTree vf agf cgf l ds = let
